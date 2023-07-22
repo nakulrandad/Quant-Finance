@@ -33,5 +33,17 @@ class QuantDataFrameAccessor():
         ex_ret = x.quant.return_mean(yr) - rfr
         sharpe = ex_ret/ x.quant.return_vol(yr)
         return sharpe
+    
+    def a2l(self):
+        """Arithmatic to logarithmic returns
+        """
+        x = self._obj
+        log_r = np.log(x.add(1))
+        return log_r
         
+    def l2a(self):
+        """Logarithmic to arithmatic returns
+        """
+        x = self._obj
+        return(np.exp(x) - 1)
     
