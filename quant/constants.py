@@ -2,12 +2,12 @@
 """
 
 YEAR_BY = {
-    'month': 12,
-    'week': 52,
-    'day': 252,
+    "month": 12,
+    "week": 52,
+    "day": 252,
 }
 
 RISK_FREE_RATE = {
-    'India': 0.06,
-    'USA': 0.025,
+    "India": 0.06,
+    "USA": 0.025,
 }

@@ -5,45 +5,43 @@ import pandas as pd
 
 import quant.constants as const
 
+
 @pd.api.extensions.register_dataframe_accessor("quant")
-class QuantDataFrameAccessor():
-    """Quant DataFrame Accessor
-    """
+class QuantDataFrameAccessor:
+    """Quant DataFrame Accessor"""
+
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
-        
+
     def return_mean(self, yr=const.YEAR_BY["day"]):
-        """Returns annualized returns for a timeseries
-        """
+        """Returns annualized returns for a timeseries"""
         mean = self._obj.mean() * yr
         return mean
-    
+
     def return_vol(self, yr=const.YEAR_BY["day"]):
-        """Returns annualized volatility for a timeseries
-        """
+        """Returns annualized volatility for a timeseries"""
         vol = self._obj.std() * np.sqrt(yr)
         return vol
-    
-    def sharpe(self, yr=const.YEAR_BY["day"], rfr=const.RISK_FREE_RATE["India"]):
+
+    def sharpe(
+        self, yr=const.YEAR_BY["day"], rfr=const.RISK_FREE_RATE["India"]
+    ):
         """Returns sharpe ratio of the timeseries
-        
+
         rfr: annualized risk free rate
         """
         x = self._obj
         ex_ret = x.quant.return_mean(yr) - rfr
-        sharpe = ex_ret/ x.quant.return_vol(yr)
+        sharpe = ex_ret / x.quant.return_vol(yr)
         return sharpe
-    
+
     def a2l(self):
-        """Arithmatic to logarithmic returns
-        """
+        """Arithmatic to logarithmic returns"""
         x = self._obj
         log_r = np.log(x.add(1))
         return log_r
-        
+
     def l2a(self):
-        """Logarithmic to arithmatic returns
-        """
+        """Logarithmic to arithmatic returns"""
         x = self._obj
-        return(np.exp(x) - 1)
-    
+        return np.exp(x) - 1
