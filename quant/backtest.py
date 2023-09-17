@@ -1,4 +1,4 @@
-"""Historical performance
+"""Analyse historical performance
 """
 
 import pandas as pd
