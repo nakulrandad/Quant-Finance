@@ -1,8 +1,11 @@
 """A flavour of pandas
 """
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 
+import quant.api as api
 import quant.constants as const
 
 
@@ -45,3 +48,32 @@ class QuantDataFrameAccessor:
         """Logarithmic to arithmatic returns"""
         x = self._obj
         return np.exp(x) - 1
+
+    @classmethod
+    def fred(cls, id: str):
+        url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
+        df = (
+            pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
+        )
+        df.index = pd.to_datetime(df.index)
+        return df
+
+    @classmethod
+    def amfi(cls, mfID, scID, edate=dt.datetime.now()):
+        sdate = edate - dt.timedelta(days=5 * 360)
+        df = api.amfi_api(mfID, scID, sdate, edate)
+        col = df.columns[0]
+        if len(df) != 0:
+            df2 = pd.DataFrame().quant.amfi(mfID, scID, sdate)
+            df = (
+                pd.concat(
+                    [
+                        df2.set_axis(["nav"], axis=1),
+                        df.set_axis(["nav"], axis=1),
+                    ]
+                )
+                .sort_index()
+                .set_axis([col], axis=1)
+                .drop_duplicates(keep="last")
+            )
+        return df
