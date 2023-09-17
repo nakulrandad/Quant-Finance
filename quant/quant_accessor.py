@@ -44,8 +44,9 @@ class QuantDataFrameAccessor:
         x = self._obj
         return np.exp(x) - 1
 
-    @classmethod
-    def fred(cls, id: str):
+    @staticmethod
+    def fred(id: str):
+        """Get timeseries from FRED"""
         url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
         df = (
             pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
@@ -53,8 +54,9 @@ class QuantDataFrameAccessor:
         df.index = pd.to_datetime(df.index)
         return df
 
-    @classmethod
-    def amfi(cls, mfID, scID, edate=dt.datetime.now()):
+    @staticmethod
+    def amfi(mfID, scID, edate=dt.datetime.now()):
+        """Get historical nav of a mutual fund"""
         sdate = edate - dt.timedelta(days=5 * 360)
         df = api.amfi_api(mfID, scID, sdate, edate)
         col = df.columns[0]
@@ -72,3 +74,47 @@ class QuantDataFrameAccessor:
                 .drop_duplicates(keep="last")
             )
         return df
+
+
+@pd.api.extensions.register_series_accessor("quant")
+class QuantSeriesAccessor:
+    """Quant Series Accessor"""
+
+    def __init__(self, pandas_obj):
+        self._obj = pandas_obj
+
+    def return_mean(self, yr=const.YEAR_BY["day"]):
+        """Returns annualized returns for a timeseries"""
+        mean = self._obj.mean() * yr
+        return mean
+
+    def return_vol(self, yr=const.YEAR_BY["day"]):
+        """Returns annualized volatility for a timeseries"""
+        vol = self._obj.std() * np.sqrt(yr)
+        return vol
+
+    def sharpe(self, yr=const.YEAR_BY["day"]):
+        """Returns sharpe ratio of the timeseries.
+        Assumes excess return is passed."""
+        x = self._obj
+        sharpe = x.quant.return_mean(yr) / x.quant.return_vol(yr)
+        return sharpe
+
+    def a2l(self):
+        """Arithmatic to logarithmic returns"""
+        x = self._obj
+        log_r = np.log(x.add(1))
+        return log_r
+
+    def l2a(self):
+        """Logarithmic to arithmatic returns"""
+        x = self._obj
+        return np.exp(x) - 1
+
+    @staticmethod
+    def fred(id: str):
+        return pd.DataFrame().quant.fred(id).squeeze()
+
+    @staticmethod
+    def amfi(mfID, scID, edate=dt.datetime.now()):
+        return pd.DataFrame().quant.amfi(mfID, scID, edate).squeeze()
