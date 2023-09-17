@@ -26,16 +26,11 @@ class QuantDataFrameAccessor:
         vol = self._obj.std() * np.sqrt(yr)
         return vol
 
-    def sharpe(
-        self, yr=const.YEAR_BY["day"], rfr=const.RISK_FREE_RATE["India"]
-    ):
-        """Returns sharpe ratio of the timeseries
-
-        rfr: annualized risk free rate
-        """
+    def sharpe(self, yr=const.YEAR_BY["day"]):
+        """Returns sharpe ratio of the timeseries.
+        Assumes excess return is passed."""
         x = self._obj
-        ex_ret = x.quant.return_mean(yr) - rfr
-        sharpe = ex_ret / x.quant.return_vol(yr)
+        sharpe = x.quant.return_mean(yr) / x.quant.return_vol(yr)
         return sharpe
 
     def a2l(self):
