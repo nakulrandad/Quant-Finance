@@ -3,6 +3,7 @@
 import datetime as dt
 import requests
 
+import numpy as np
 import pandas as pd
 
 
@@ -42,3 +43,20 @@ def amfi_api(mfID, scID, fDate, tDate) -> pd.DataFrame:
     except:
         nav_df = pd.DataFrame(columns=["date", "nav"]).set_index("date")
     return nav_df
+
+
+def get_rfr(tenor="B"):
+    raw_data = (
+        pd.DataFrame()
+        .quant.fred("IRSTCI01INM156N")
+        .div(100)
+        .reset_index()
+        .to_numpy()
+    )
+    df = pd.DataFrame(
+        np.concatenate([raw_data, [[dt.datetime.now(), np.nan]]]),
+        columns=["date", "Cash"],
+    ).set_index("date")
+    df.index = pd.to_datetime(df.index.strftime("%Y-%m-%d"))
+    df = df.resample("B").ffill().fillna(method="ffill").div(252)
+    return df.resample(tenor).sum()

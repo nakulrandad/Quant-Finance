@@ -5,7 +5,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-import quant.api as api
+import quant.data as data
 import quant.constants as const
 
 
@@ -72,7 +72,7 @@ class QuantDataFrameAccessor:
     def amfi(mfID, scID, edate=dt.datetime.now()):
         """Get historical nav of a mutual fund"""
         sdate = edate - dt.timedelta(days=5 * 360)
-        df = api.amfi_api(mfID, scID, sdate, edate)
+        df = data.amfi_api(mfID, scID, sdate, edate)
         col = df.columns[0]
         if len(df) != 0:
             df2 = pd.DataFrame().quant.amfi(mfID, scID, sdate)
