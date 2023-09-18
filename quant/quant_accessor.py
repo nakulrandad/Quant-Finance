@@ -44,11 +44,17 @@ class QuantDataFrameAccessor:
         x = self._obj
         return np.exp(x) - 1
 
-    def t2e(self):
-        """Convert total returns to excess return"""
+    def t2e(self, freq="D"):
+        """Convert total return to excess return"""
         x = self._obj
-        cash = pd.Series().cash()
-        return x.subtract(cash, axis=0)
+        er = x.subtract(pd.Series().cash(freq), axis=0)
+        return er[er.first_valid_index() :]
+
+    def e2t(self, freq="D"):
+        """Convert excess return to total return"""
+        x = self._obj
+        tr = x.add(pd.Series().cash(freq), axis=0)
+        return tr[tr.first_valid_index() :]
 
     def max_drawdown(self):
         """Returns max drawdown for return timeseries of each asset
@@ -80,9 +86,9 @@ class QuantDataFrameAccessor:
         return df
 
     @staticmethod
-    def cash(tenor: str = "B"):
+    def cash(freq: str = "D"):
         """Get risk-free rate"""
-        return data.get_rfr(tenor)
+        return data.get_rfr(freq)
 
     @staticmethod
     def fred(id: str):
@@ -130,11 +136,17 @@ class QuantSeriesAccessor:
         x = self._obj
         return np.exp(x) - 1
 
-    def t2e(self):
+    def t2e(self, freq: str = "D"):
         """Convert total returns to excess return"""
         x = self._obj
-        cash = pd.Series().cash()
-        return x.subtract(cash, axis=0)
+        er = x.subtract(pd.Series().cash(freq), axis=0)
+        return er[er.first_valid_index() :]
+
+    def e2t(self, freq: str = "D"):
+        """Convert excess return to total return"""
+        x = self._obj
+        tr = x.add(pd.Series().cash(freq), axis=0)
+        return tr[tr.first_valid_index() :]
 
     def max_drawdown(self):
         """Returns max drawdown for a return timeseries
@@ -168,6 +180,6 @@ class QuantSeriesAccessor:
         return pd.DataFrame().quant.mf(mfID, scID, edate).squeeze()
 
     @staticmethod
-    def cash(tenor: str = "B"):
+    def cash(freq: str = "D"):
         """Get risk-free rate"""
-        return pd.DataFrame().quant.cash(tenor).squeeze()
+        return pd.DataFrame().quant.cash(freq).squeeze()

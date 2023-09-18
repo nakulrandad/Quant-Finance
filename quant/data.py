@@ -76,7 +76,7 @@ def fred(id: str):
     return df
 
 
-def get_rfr(tenor: str = "B"):
+def get_rfr(freq: str = "D"):
     raw_data = (
         pd.DataFrame()
         .quant.fred("IRSTCI01INM156N")
@@ -95,4 +95,5 @@ def get_rfr(tenor: str = "B"):
         .fillna(method="ffill")
         .div(const.YEAR_BY["day"])
     )
-    return df.resample(tenor).sum()
+    sampling = {"D": "B", "W": "W-Wed", "M": "M", "Y": "Y"}
+    return df.resample(sampling[freq]).sum()
