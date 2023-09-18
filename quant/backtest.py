@@ -1,6 +1,7 @@
 """Analyse historical performance
 """
 
+import numpy as np
 import pandas as pd
 
 from . import constants as const
@@ -47,12 +48,20 @@ def perf_summary(
 
 def perf_summary_table(ret: pd.DataFrame, yr=const.YEAR_BY["day"]):
     summary = perf_summary(ret, yr)
-    table = summary.style.format(
-        {
-            "Excess Return": "{:.2%}",
-            "Volatility": "{:.2%}",
-            "Sharpe": "{:,2f}",
-            "Max Drawdown": "{:.2%}",
-        }
-    ).background_gradient()
+    order = ["Excess Return", "Volatility", "Sharpe", "Max Drawdown"]
+    summary = summary.loc[
+        :, np.append(order, np.setdiff1d(summary.columns, order))
+    ]
+    table = (
+        summary.style.format(
+            {
+                "Excess Return": "{:.2%}",
+                "Volatility": "{:.2%}",
+                "Sharpe": "{:.2f}",
+                "Max Drawdown": "{:.2%}",
+            }
+        )
+        .background_gradient(subset=["Max Drawdown"], cmap="YlOrRd_r")
+        .background_gradient(subset=["Sharpe"], cmap="YlGn")
+    )
     return table
