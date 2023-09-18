@@ -96,9 +96,13 @@ class QuantDataFrameAccessor:
         return data.fred(id)
 
     @staticmethod
-    def mf(mfID, scID, edate=dt.datetime.now()):
+    def mf(scid, edate=dt.datetime.now()):
         """Get historical nav of a mutual fund"""
-        return data.amfi(mfID, scID, edate)
+        if str(scid) == "151739":  # UTI NIFTY 500 VALUE 50 INDEX FUND
+            df = data.amfi(28, scid, edate)
+        else:
+            df = data.mftool(scid, edate)
+        return df
 
 
 @pd.api.extensions.register_series_accessor("quant")
@@ -176,8 +180,8 @@ class QuantSeriesAccessor:
         return pd.DataFrame().quant.fred(id).squeeze()
 
     @staticmethod
-    def mf(mfID, scID, edate=dt.datetime.now()):
-        return pd.DataFrame().quant.mf(mfID, scID, edate).squeeze()
+    def mf(scid, edate=dt.datetime.now()):
+        return pd.DataFrame().quant.mf(scid, edate).squeeze()
 
     @staticmethod
     def cash(freq: str = "D"):

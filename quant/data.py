@@ -2,22 +2,24 @@
 """
 import datetime as dt
 import requests
+from typing import Union
 
 import numpy as np
 import pandas as pd
+from mftool import Mftool
 
 from . import constants as const
 
 
-def amfi_api(mfID, scID, fDate, tDate) -> pd.DataFrame:
+def amfi_api(mfid, scid, fDate, tDate) -> pd.DataFrame:
     try:
         fDate = dt.datetime.strftime(fDate, "%d-%b-%Y")
         tDate = dt.datetime.strftime(tDate, "%d-%b-%Y")
 
         url = "https://www.amfiindia.com/modules/NavHistoryPeriod"
         params = {
-            "mfID": str(mfID),
-            "scID": str(scID),
+            "mfID": str(mfid),
+            "scID": str(scid),
             "fDate": fDate,
             "tDate": tDate,
         }
@@ -32,7 +34,7 @@ def amfi_api(mfID, scID, fDate, tDate) -> pd.DataFrame:
         data = pd.read_html(r.text)[0]
         fund_house = data.iloc[:, 0].name[1]
         fund_name = data.iloc[:, 0].name[3]
-        col = fund_house + " | " + fund_name
+        col = fund_house + "|" + fund_name
 
         nav_df = (
             data.set_axis([col, "null1", "null2", "date"], axis=1)
@@ -47,13 +49,17 @@ def amfi_api(mfID, scID, fDate, tDate) -> pd.DataFrame:
     return nav_df
 
 
-def amfi(mfID, scID, edate=dt.datetime.now()):
+def amfi(
+    mfid: Union[str, float, int],
+    scid: Union[str, float, int],
+    edate=dt.datetime.now(),
+):
     """Get historical nav of a mutual fund"""
     sdate = edate - dt.timedelta(days=5 * 360)
-    df = amfi_api(mfID, scID, sdate, edate)
+    df = amfi_api(mfid, scid, sdate, edate)
     col = df.columns[0]
     if len(df) != 0:
-        df2 = amfi(mfID, scID, sdate)
+        df2 = amfi(mfid, scid, sdate)
         df = (
             pd.concat(
                 [
@@ -66,6 +72,22 @@ def amfi(mfID, scID, edate=dt.datetime.now()):
             .drop_duplicates(keep="last")
         )
     return df
+
+
+def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
+    mf = Mftool()
+    data = mf.get_scheme_historical_nav(scid)
+    try:
+        col = data["fund_house"] + "|" + data["scheme_name"]
+    except:
+        print(f"Could not find data for {scid}")
+    nav_df = (
+        pd.DataFrame(data["data"])
+        .set_index("date")
+        .rename({"nav": col}, axis=1)
+    )
+    nav_df.index = pd.to_datetime(nav_df.index, dayfirst=True)
+    return nav_df.sort_index().astype("float").loc[:edate]
 
 
 def fred(id: str):
