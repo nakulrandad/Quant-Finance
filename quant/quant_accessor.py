@@ -59,35 +59,19 @@ class QuantDataFrameAccessor:
         return mdd
 
     @staticmethod
-    def fred(id: str):
-        """Get timeseries from FRED"""
-        url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
-        df = (
-            pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
-        )
-        df.index = pd.to_datetime(df.index)
-        return df
+    def cash(tenor: str):
+        """Get risk-free rate"""
+        return data.get_rfr(tenor)
 
     @staticmethod
-    def amfi(mfID, scID, edate=dt.datetime.now()):
+    def fred(id: str):
+        """Get timeseries from FRED"""
+        return data.fred(id)
+
+    @staticmethod
+    def mf(mfID, scID, edate=dt.datetime.now()):
         """Get historical nav of a mutual fund"""
-        sdate = edate - dt.timedelta(days=5 * 360)
-        df = data.amfi_api(mfID, scID, sdate, edate)
-        col = df.columns[0]
-        if len(df) != 0:
-            df2 = pd.DataFrame().quant.amfi(mfID, scID, sdate)
-            df = (
-                pd.concat(
-                    [
-                        df2.set_axis(["nav"], axis=1),
-                        df.set_axis(["nav"], axis=1),
-                    ]
-                )
-                .sort_index()
-                .set_axis([col], axis=1)
-                .drop_duplicates(keep="last")
-            )
-        return df
+        return data.amfi(mfID, scID, edate)
 
 
 @pd.api.extensions.register_series_accessor("quant")
@@ -153,5 +137,10 @@ class QuantSeriesAccessor:
         return pd.DataFrame().quant.fred(id).squeeze()
 
     @staticmethod
-    def amfi(mfID, scID, edate=dt.datetime.now()):
-        return pd.DataFrame().quant.amfi(mfID, scID, edate).squeeze()
+    def mf(mfID, scID, edate=dt.datetime.now()):
+        return pd.DataFrame().quant.mf(mfID, scID, edate).squeeze()
+
+    @staticmethod
+    def cash(tenor: str):
+        """Get risk-free rate"""
+        return pd.DataFrame().quant.cash(tenor).squeeze()

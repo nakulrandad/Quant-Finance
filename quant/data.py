@@ -45,7 +45,36 @@ def amfi_api(mfID, scID, fDate, tDate) -> pd.DataFrame:
     return nav_df
 
 
-def get_rfr(tenor="B"):
+def amfi(mfID, scID, edate=dt.datetime.now()):
+    """Get historical nav of a mutual fund"""
+    sdate = edate - dt.timedelta(days=5 * 360)
+    df = amfi_api(mfID, scID, sdate, edate)
+    col = df.columns[0]
+    if len(df) != 0:
+        df2 = pd.DataFrame().quant.amfi(mfID, scID, sdate)
+        df = (
+            pd.concat(
+                [
+                    df2.set_axis(["nav"], axis=1),
+                    df.set_axis(["nav"], axis=1),
+                ]
+            )
+            .sort_index()
+            .set_axis([col], axis=1)
+            .drop_duplicates(keep="last")
+        )
+    return df
+
+
+def fred(id: str):
+    """Get timeseries from FRED"""
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
+    df = pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
+    df.index = pd.to_datetime(df.index)
+    return df
+
+
+def get_rfr(tenor: str = "B"):
     raw_data = (
         pd.DataFrame()
         .quant.fred("IRSTCI01INM156N")
