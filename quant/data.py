@@ -53,7 +53,7 @@ def amfi(mfID, scID, edate=dt.datetime.now()):
     df = amfi_api(mfID, scID, sdate, edate)
     col = df.columns[0]
     if len(df) != 0:
-        df2 = pd.DataFrame().quant.amfi(mfID, scID, sdate)
+        df2 = amfi(mfID, scID, sdate)
         df = (
             pd.concat(
                 [

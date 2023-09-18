@@ -44,6 +44,12 @@ class QuantDataFrameAccessor:
         x = self._obj
         return np.exp(x) - 1
 
+    def t2e(self):
+        """Convert total returns to excess return"""
+        x = self._obj
+        cash = pd.Series().cash()
+        return x.subtract(cash, axis=0)
+
     def max_drawdown(self):
         """Returns max drawdown for return timeseries of each asset
 
@@ -58,8 +64,23 @@ class QuantDataFrameAccessor:
             mdd[col] = ret[col].quant.max_drawdown()
         return mdd
 
+    def align(self):
+        """Align returns dataframe"""
+        x = self._obj
+        df = (
+            pd.concat(
+                [
+                    pd.DataFrame([np.ones(len(x.columns))], columns=x.columns),
+                    x.add(1).cumprod().dropna(),
+                ]
+            )
+            .pct_change()
+            .dropna()
+        )
+        return df
+
     @staticmethod
-    def cash(tenor: str):
+    def cash(tenor: str = "B"):
         """Get risk-free rate"""
         return data.get_rfr(tenor)
 
@@ -109,6 +130,12 @@ class QuantSeriesAccessor:
         x = self._obj
         return np.exp(x) - 1
 
+    def t2e(self):
+        """Convert total returns to excess return"""
+        x = self._obj
+        cash = pd.Series().cash()
+        return x.subtract(cash, axis=0)
+
     def max_drawdown(self):
         """Returns max drawdown for a return timeseries
 
@@ -141,6 +168,6 @@ class QuantSeriesAccessor:
         return pd.DataFrame().quant.mf(mfID, scID, edate).squeeze()
 
     @staticmethod
-    def cash(tenor: str):
+    def cash(tenor: str = "B"):
         """Get risk-free rate"""
         return pd.DataFrame().quant.cash(tenor).squeeze()
