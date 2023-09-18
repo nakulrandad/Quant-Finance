@@ -6,6 +6,8 @@ import requests
 import numpy as np
 import pandas as pd
 
+from . import constants as const
+
 
 def amfi_api(mfID, scID, fDate, tDate) -> pd.DataFrame:
     try:
@@ -87,5 +89,10 @@ def get_rfr(tenor: str = "B"):
         columns=["date", "Cash"],
     ).set_index("date")
     df.index = pd.to_datetime(df.index.strftime("%Y-%m-%d"))
-    df = df.resample("B").ffill().fillna(method="ffill").div(252)
+    df = (
+        df.resample("B")
+        .ffill()
+        .fillna(method="ffill")
+        .div(const.YEAR_BY["day"])
+    )
     return df.resample(tenor).sum()
