@@ -44,6 +44,20 @@ class QuantDataFrameAccessor:
         x = self._obj
         return np.exp(x) - 1
 
+    def max_drawdown(self):
+        """Returns max drawdown for return timeseries of each asset
+
+        Returns
+        -------
+        dict
+            {asset: [drawdown_start, drawdown_end, max_drawdown]}
+        """
+        ret = self._obj
+        mdd = {}
+        for col in ret.columns:
+            mdd[col] = ret[col].quant.max_drawdown()
+        return mdd
+
     @staticmethod
     def fred(id: str):
         """Get timeseries from FRED"""
@@ -110,6 +124,29 @@ class QuantSeriesAccessor:
         """Logarithmic to arithmatic returns"""
         x = self._obj
         return np.exp(x) - 1
+
+    def max_drawdown(self):
+        """Returns max drawdown for a return timeseries
+
+        Returns
+        -------
+        list
+            [drawdown_start, drawdown_end, max_drawdown]
+        """
+        ret = self._obj
+        level = ret.dropna().add(1).cumprod()
+        peak = [np.nan, -np.inf]
+        mdd = [np.nan, np.nan, 0]
+        for idx in level.index:
+            if level.loc[idx] > peak[1]:
+                peak[0] = idx
+                peak[1] = level.loc[idx]
+            dd = level.loc[idx] / peak[1] - 1
+            if dd < mdd[2]:
+                mdd[0] = peak[0]
+                mdd[1] = idx
+                mdd[2] = dd
+        return mdd
 
     @staticmethod
     def fred(id: str):

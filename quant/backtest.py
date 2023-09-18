@@ -16,6 +16,7 @@ def perf_summary(
         "Excess Return": lambda x: x.quant.return_mean(yr),
         "Volatility": lambda x: x.quant.return_vol(yr),
         "Sharpe": lambda x: x.quant.sharpe(yr),
+        "Max Drawdown": lambda x: x.quant.max_drawdown()[2],
         **additional_stats,
     }
 
@@ -47,6 +48,11 @@ def perf_summary(
 def perf_summary_table(ret: pd.DataFrame, yr=const.YEAR_BY["day"]):
     summary = perf_summary(ret, yr)
     table = summary.style.format(
-        {"Excess Return": "{:.2%}", "Volatility": "{:.2%}", "Sharpe": "{:,2f}"}
+        {
+            "Excess Return": "{:.2%}",
+            "Volatility": "{:.2%}",
+            "Sharpe": "{:,2f}",
+            "Max Drawdown": "{:.2%}",
+        }
     ).background_gradient()
     return table
