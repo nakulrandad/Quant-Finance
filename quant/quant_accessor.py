@@ -33,6 +33,27 @@ class QuantDataFrameAccessor:
         sharpe = x.quant.return_mean(yr) / x.quant.return_vol(yr)
         return sharpe
 
+    def pinv(self):
+        """Partial inverse of dataframe"""
+        x = self._obj
+        pinv = pd.DataFrame(np.linalg.pinv(x), columns=x.columns, index=x.index)
+        return pinv
+
+    def beta(self, bmk: pd.DataFrame):
+        """Portfolio beta to benchmark"""
+        x = self._obj
+        cov = pd.concat([x, bmk], axis=1).quant.align().cov()
+        beta = (
+            cov.loc[x.columns, bmk.columns]
+            @ cov.loc[bmk.columns, bmk.columns].quant.pinv()
+        )
+        return beta
+
+    def d2m(self):
+        """Daily to monthly returns"""
+        x = self._obj
+        return x.add(1).cumprod().resample("M").last().pct_change()
+
     def a2l(self):
         """Arithmatic to logarithmic returns"""
         x = self._obj
@@ -84,6 +105,17 @@ class QuantDataFrameAccessor:
             .dropna()
         )
         return df
+
+    def rename(self, cols):
+        x = self._obj
+        return x.set_axis(cols, axis=1)
+
+    def first_valid_index(self):
+        x = self._obj
+        fvi = []
+        for col in x.columns:
+            fvi.append({"asset": col, "date": x[col].first_valid_index()})
+        return pd.DataFrame(fvi).sort_values(by="date").set_index("asset").squeeze()
 
     @staticmethod
     def cash(freq: str = "D"):

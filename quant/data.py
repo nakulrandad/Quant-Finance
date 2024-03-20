@@ -2,6 +2,7 @@
 """
 import datetime as dt
 import requests
+from functools import lru_cache
 from typing import Union
 
 import numpy as np
@@ -41,9 +42,7 @@ def amfi_api(mfid, scid, fDate, tDate) -> pd.DataFrame:
             .set_index("date")
             .drop(["null1", "null2"], axis=1)
         )
-        nav_df.index = pd.to_datetime(
-            nav_df.index, dayfirst=True, format="mixed"
-        )
+        nav_df.index = pd.to_datetime(nav_df.index, dayfirst=True, format="mixed")
     except:
         nav_df = pd.DataFrame(columns=["date", "nav"]).set_index("date")
     return nav_df
@@ -81,11 +80,7 @@ def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
         col = data["fund_house"] + "|" + data["scheme_name"]
     except:
         print(f"Could not find data for {scid}")
-    nav_df = (
-        pd.DataFrame(data["data"])
-        .set_index("date")
-        .rename({"nav": col}, axis=1)
-    )
+    nav_df = pd.DataFrame(data["data"]).set_index("date").rename({"nav": col}, axis=1)
     nav_df.index = pd.to_datetime(nav_df.index, dayfirst=True)
     return nav_df.sort_index().astype("float").loc[:edate]
 
@@ -98,24 +93,17 @@ def fred(id: str):
     return df
 
 
+@lru_cache(None)
 def get_rfr(freq: str = "D"):
+    assert freq in ["D", "W", "M", "Y"], "Input valid frequency!"
     raw_data = (
-        pd.DataFrame()
-        .quant.fred("IRSTCI01INM156N")
-        .div(100)
-        .reset_index()
-        .to_numpy()
+        pd.DataFrame().quant.fred("IRSTCI01INM156N").div(100).reset_index().to_numpy()
     )
     df = pd.DataFrame(
         np.concatenate([raw_data, [[dt.datetime.now(), np.nan]]]),
         columns=["date", "Cash"],
     ).set_index("date")
     df.index = pd.to_datetime(df.index.strftime("%Y-%m-%d"))
-    df = (
-        df.resample("B")
-        .ffill()
-        .fillna(method="ffill")
-        .div(const.YEAR_BY["day"])
-    )
+    df = df.resample("B").ffill().fillna(method="ffill").div(const.YEAR_BY["day"])
     sampling = {"D": "B", "W": "W-Wed", "M": "M", "Y": "Y"}
-    return df.resample(sampling[freq]).sum()
+    return df.resample(sampling[freq]).sum().iloc[:-1]
