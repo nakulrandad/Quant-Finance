@@ -2,7 +2,7 @@
 """
 
 from . import version
-from .quant_accessor import QuantDataFrameAccessor, QuantSeriesAccessor
+from . import quant_accessor
 
 __version__ = version.version
 __author__ = "Nakul Randad"

@@ -49,9 +49,7 @@ def perf_summary(
 def perf_summary_table(ret: pd.DataFrame, yr=const.YEAR_BY["day"]):
     summary = perf_summary(ret, yr)
     order = ["Excess Return", "Volatility", "Sharpe", "Max Drawdown"]
-    summary = summary.loc[
-        :, np.append(order, np.setdiff1d(summary.columns, order))
-    ]
+    summary = summary.loc[:, np.append(order, np.setdiff1d(summary.columns, order))]
     table = (
         summary.style.format(
             {

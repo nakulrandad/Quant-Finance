@@ -1,5 +1,6 @@
 """A flavour of pandas
 """
+
 import datetime as dt
 
 import numpy as np
