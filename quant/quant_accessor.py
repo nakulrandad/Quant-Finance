@@ -1,13 +1,12 @@
-"""A flavour of pandas
-"""
+"""A flavour of pandas"""
 
 import datetime as dt
 
 import numpy as np
 import pandas as pd
 
-import quant.data as data
-import quant.constants as const
+from . import constants as const
+from . import data, utils
 
 
 @pd.api.extensions.register_dataframe_accessor("quant")
@@ -77,6 +76,30 @@ class QuantDataFrameAccessor:
         x = self._obj
         tr = x.add(pd.Series().cash(freq), axis=0)
         return tr[tr.first_valid_index() :]
+
+    def to_returns(self):
+        """Convert prices to returns"""
+        x = self._obj
+        x = utils.prepare_prices(x, fill_method="ffill")
+        for col in x.columns:
+            x[col] = x[col].pct_change()
+        x = x.dropna(how="all")
+        return x
+
+    def to_prices(self):
+        """Convert returns to prices"""
+        x = self._obj
+        x = utils.prepare_returns(x)
+        for col in x.columns:
+            x[col] = x[col].add(1).cumprod()
+        return x
+
+    def rebase(self, base=100):
+        """Rebase price timeseries"""
+        x = self._obj
+        for col in x.columns:
+            x[col] = x[col].div(x[col].iloc[0]).mul(base)
+        return x
 
     def max_drawdown(self):
         """Returns max drawdown for return timeseries of each asset
@@ -194,14 +217,14 @@ class QuantSeriesAccessor:
             [drawdown_start, drawdown_end, max_drawdown]
         """
         ret = self._obj
-        level = ret.dropna().add(1).cumprod()
+        price = ret.dropna().add(1).cumprod()
         peak = [np.nan, -np.inf]
         mdd = [np.nan, np.nan, 0]
-        for idx in level.index:
-            if level.loc[idx] > peak[1]:
+        for idx in price.index:
+            if price.loc[idx] > peak[1]:
                 peak[0] = idx
-                peak[1] = level.loc[idx]
-            dd = level.loc[idx] / peak[1] - 1
+                peak[1] = price.loc[idx]
+            dd = price.loc[idx] / peak[1] - 1
             if dd < mdd[2]:
                 mdd[0] = peak[0]
                 mdd[1] = idx

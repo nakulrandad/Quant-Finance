@@ -1,12 +1,12 @@
-"""APIs to access data
-"""
+"""APIs to access data"""
+
 import datetime as dt
-import requests
 from functools import lru_cache
 from typing import Union
 
 import numpy as np
 import pandas as pd
+import requests
 from mftool import Mftool
 
 from . import constants as const
@@ -104,6 +104,6 @@ def get_rfr(freq: str = "D"):
         columns=["date", "Cash"],
     ).set_index("date")
     df.index = pd.to_datetime(df.index.strftime("%Y-%m-%d"))
-    df = df.resample("B").ffill().fillna(method="ffill").div(const.YEAR_BY["day"])
+    df = df.resample("B").ffill().div(const.YEAR_BY["day"])
     sampling = {"D": "B", "W": "W-Wed", "M": "M", "Y": "Y"}
     return df.resample(sampling[freq]).sum().iloc[:-1]

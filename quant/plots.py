@@ -1,6 +1,6 @@
 import matplotlib as mpl
-from cycler import cycler
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 
 def set_plot_options(version="bold"):
@@ -24,7 +24,6 @@ def set_plot_options(version="bold"):
                 "darkgreen",
             ]
         )
-        plt.rcParams["figure.dpi"] = 100
         plt.rcParams["lines.linewidth"] = 1
         plt.rcParams["lines.color"] = "black"
         plt.rcParams["legend.edgecolor"] = "black"
