@@ -7,6 +7,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import requests
+import yfinance as yf
 from mftool import Mftool
 
 from . import constants as const
@@ -85,6 +86,34 @@ def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
     return nav_df.sort_index().astype("float").loc[:edate]
 
 
+def mf_list(filter=None):
+    """Get list of mutual funds and sceheme ids
+    filter : str
+        Filter using case insensitive name
+    """
+    url = "https://api.mfapi.in/mf"
+    data = requests.get(url).json()
+    data = pd.DataFrame(data)
+    if filter is not None:
+        data = data[data.schemeName.str.contains(filter, case=False)]
+    return data
+
+
+def mf_api(scid: Union[str, float, int]):
+    if isinstance(scid, (int, float)):
+        scid = str(int(scid))
+    url = f"https://api.mfapi.in/mf/{scid}"
+
+    data = requests.get(url).json()
+    if not data["data"]:
+        raise ValueError(f"Could not find data for {scid}")
+
+    df = pd.DataFrame(data["data"]).set_index("date")
+    df.index = pd.to_datetime(df.index, dayfirst=True)
+    df = df.sort_index().rename(columns={"nav": data["meta"]["scheme_name"]})
+    return df
+
+
 def fred(id: str):
     """Get timeseries from FRED"""
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
@@ -107,3 +136,23 @@ def get_rfr(freq: str = "D"):
     df = df.resample("B").ffill().div(const.YEAR_BY["day"])
     sampling = {"D": "B", "W": "W-Wed", "M": "M", "Y": "Y"}
     return df.resample(sampling[freq]).sum().iloc[:-1]
+
+
+def yf_returns(ticker, period="max"):
+    """Get returns data from Yahoo Finance
+    period : str
+        Valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
+    """
+    params = {
+        "tickers": ticker,
+        "auto_adjust": True,
+        "multi_level_index": False,
+        "progress": False,
+    }
+    if isinstance(period, pd.DatetimeIndex):
+        params["start"] = period[0]
+    else:
+        params["period"] = period
+    df = yf.download(**params)["Close"].pct_change()
+    df = df.tz_localize(None)
+    return df
