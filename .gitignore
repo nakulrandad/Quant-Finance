@@ -165,6 +165,7 @@ cython_debug/
 # ignore some local files
 data/private
 analysis/scratchpad.ipynb
+analysis/scratchpad.py
 
 # Mac files
 .DS_Store

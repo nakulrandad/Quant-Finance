@@ -5,8 +5,8 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
+from . import api, utils
 from . import constants as const
-from . import data, utils
 
 
 @pd.api.extensions.register_dataframe_accessor("quant")
@@ -144,21 +144,35 @@ class QuantDataFrameAccessor:
     @staticmethod
     def cash(freq: str = "D"):
         """Get risk-free rate"""
-        return data.get_rfr(freq)
+        return api.get_rfr(freq)
 
     @staticmethod
     def fred(id: str):
         """Get timeseries from FRED"""
-        return data.fred(id)
+        return api.fred_api(id)
 
     @staticmethod
-    def mf(scid, edate=dt.datetime.now()):
+    def mutual_fund(scheme_ids, end=dt.datetime.now()):
         """Get historical nav of a mutual fund"""
-        if str(scid) == "151739":  # UTI NIFTY 500 VALUE 50 INDEX FUND
-            df = data.amfi(28, scid, edate)
-        else:
-            df = data.mftool(scid, edate)
-        return df
+        if isinstance(scheme_ids, (int, float, str)):
+            scheme_ids = [scheme_ids]
+        data = []
+        for scid in scheme_ids:
+            data.append(api.mf_api(scid).loc[:end])
+        return pd.concat(data, axis=1)
+
+    @staticmethod
+    def ticker(tickers, end=dt.datetime.now()):
+        """Get historical prices of a ticker"""
+        if isinstance(tickers, str):
+            tickers = [tickers]
+        data = []
+        for ticker in tickers:
+            series = api.yf_api(ticker)
+            series.index.name = "date"
+            series.name = ticker
+            data.append(series)
+        return pd.concat(data, axis=1).dropna(how="all").loc[:end]
 
 
 @pd.api.extensions.register_series_accessor("quant")
@@ -234,10 +248,6 @@ class QuantSeriesAccessor:
     @staticmethod
     def fred(id: str):
         return pd.DataFrame().quant.fred(id).squeeze()
-
-    @staticmethod
-    def mf(scid, edate=dt.datetime.now()):
-        return pd.DataFrame().quant.mf(scid, edate).squeeze()
 
     @staticmethod
     def cash(freq: str = "D"):

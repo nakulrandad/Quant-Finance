@@ -88,18 +88,25 @@ def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
 
 def mf_list(filter=None):
     """Get list of mutual funds and sceheme ids
-    filter : str
+    filter : str or list
         Filter using case insensitive name
     """
     url = "https://api.mfapi.in/mf"
     data = requests.get(url).json()
     data = pd.DataFrame(data)
     if filter is not None:
-        data = data[data.schemeName.str.contains(filter, case=False)]
+        if isinstance(filter, str):
+            filter = [filter]
+        mask = data.schemeName.str.contains(filter[0], case=False)
+        if len(filter) > 1:
+            for f in filter[1:]:
+                mask &= data.schemeName.str.contains(f, case=False)
+        data = data[mask]
     return data
 
 
 def mf_api(scid: Union[str, float, int]):
+    """Get historical nav of a mutual fund from mfapi"""
     if isinstance(scid, (int, float)):
         scid = str(int(scid))
     url = f"https://api.mfapi.in/mf/{scid}"
@@ -114,7 +121,7 @@ def mf_api(scid: Union[str, float, int]):
     return df
 
 
-def fred(id: str):
+def fred_api(id: str):
     """Get timeseries from FRED"""
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
     df = pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
@@ -125,9 +132,7 @@ def fred(id: str):
 @lru_cache(None)
 def get_rfr(freq: str = "D"):
     assert freq in ["D", "W", "M", "Y"], "Input valid frequency!"
-    raw_data = (
-        pd.DataFrame().quant.fred("IRSTCI01INM156N").div(100).reset_index().to_numpy()
-    )
+    raw_data = fred_api("IRSTCI01INM156N").div(100).reset_index().to_numpy()
     df = pd.DataFrame(
         np.concatenate([raw_data, [[dt.datetime.now(), np.nan]]]),
         columns=["date", "Cash"],
@@ -138,7 +143,7 @@ def get_rfr(freq: str = "D"):
     return df.resample(sampling[freq]).sum().iloc[:-1]
 
 
-def yf_returns(ticker, period="max"):
+def yf_api(ticker, period="max"):
     """Get returns data from Yahoo Finance
     period : str
         Valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
@@ -146,7 +151,6 @@ def yf_returns(ticker, period="max"):
     params = {
         "tickers": ticker,
         "auto_adjust": True,
-        "multi_level_index": False,
         "progress": False,
     }
     if isinstance(period, pd.DatetimeIndex):
