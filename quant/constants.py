@@ -1,13 +1,13 @@
-"""All constants are defined here
-"""
+"""All constants are defined here"""
 
 YEAR_BY = {
     "month": 12,
     "week": 52,
     "day": 252,
+    "cash_day": 360,
 }
 
-RISK_FREE_RATE = {
-    "India": 0.06,
-    "USA": 0.025,
+RISK_FREE_RATE_FRED = {
+    "INR": "IRSTCI01INM156N",  # Monthly Call Money/Interbank Rate
+    "USD": "DFF",  # Daily Effective Federal Funds Rate
 }

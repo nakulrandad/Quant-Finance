@@ -9,12 +9,38 @@ from . import api, utils
 from . import constants as const
 
 
+class SharedStateManager:
+    """A singleton-like manager to store shared state."""
+
+    def __init__(self):
+        self._currency = "INR"
+
+    def set_currency(self, value):
+        assert value in ["INR", "USD"], "Currency must be either 'INR' or 'USD'."
+        self._currency = value
+        print(f"Default currency set to {value}")
+
+    def get_currency(self):
+        return self._currency
+
+
+shared_manager = SharedStateManager()
+
+
 @pd.api.extensions.register_dataframe_accessor("quant")
 class QuantDataFrameAccessor:
     """Quant DataFrame Accessor"""
 
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
+
+    @staticmethod
+    def set_currency(value):
+        shared_manager.set_currency(value)
+
+    @staticmethod
+    def get_currency():
+        return shared_manager.get_currency()
 
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""
@@ -68,13 +94,13 @@ class QuantDataFrameAccessor:
     def t2e(self, freq="D"):
         """Convert total return to excess return"""
         x = self._obj
-        er = x.subtract(pd.Series().cash(freq), axis=0)
+        er = x.subtract(pd.Series().quant.cash(freq), axis=0)
         return er[er.first_valid_index() :]
 
     def e2t(self, freq="D"):
         """Convert excess return to total return"""
         x = self._obj
-        tr = x.add(pd.Series().cash(freq), axis=0)
+        tr = x.add(pd.Series().quant.cash(freq), axis=0)
         return tr[tr.first_valid_index() :]
 
     def to_returns(self):
@@ -118,16 +144,9 @@ class QuantDataFrameAccessor:
     def align(self):
         """Align returns dataframe"""
         x = self._obj
-        df = (
-            pd.concat(
-                [
-                    pd.DataFrame([np.ones(len(x.columns))], columns=x.columns),
-                    x.add(1).cumprod().dropna(),
-                ]
-            )
-            .pct_change()
-            .dropna()
-        )
+        fvi = x.quant.first_valid_index()[0]
+        lvi = x.quant.last_valid_index()[0]
+        df = x.loc[fvi:lvi].add(1).cumprod().ffill().pct_change().dropna(how="all")
         return df
 
     def rename(self, cols):
@@ -139,12 +158,26 @@ class QuantDataFrameAccessor:
         fvi = []
         for col in x.columns:
             fvi.append({"asset": col, "date": x[col].first_valid_index()})
-        return pd.DataFrame(fvi).sort_values(by="date").set_index("asset").squeeze()
+        return (
+            pd.DataFrame(fvi)
+            .sort_values(by="date", ascending=False)
+            .set_index("asset")
+            .squeeze()
+        )
+
+    def last_valid_index(self):
+        x = self._obj
+        lvi = []
+        for col in x.columns:
+            lvi.append({"asset": col, "date": x[col].last_valid_index()})
+        return pd.DataFrame(lvi).sort_values(by="date").set_index("asset").squeeze()
 
     @staticmethod
-    def cash(freq: str = "D"):
+    def cash(freq: str = "D", curr=None):
         """Get risk-free rate"""
-        return api.get_rfr(freq)
+        if curr is None:
+            curr = shared_manager.get_currency()
+        return api.get_rfr(freq, curr)
 
     @staticmethod
     def fred(id: str):
@@ -181,6 +214,14 @@ class QuantSeriesAccessor:
 
     def __init__(self, pandas_obj):
         self._obj = pandas_obj
+
+    @staticmethod
+    def set_currency(value):
+        shared_manager.set_currency(value)
+
+    @staticmethod
+    def get_currency():
+        return shared_manager.get_currency()
 
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""
@@ -250,6 +291,8 @@ class QuantSeriesAccessor:
         return pd.DataFrame().quant.fred(id).squeeze()
 
     @staticmethod
-    def cash(freq: str = "D"):
+    def cash(freq: str = "D", curr=None):
         """Get risk-free rate"""
-        return pd.DataFrame().quant.cash(freq).squeeze()
+        if curr is None:
+            curr = shared_manager.get_currency()
+        return pd.DataFrame().quant.cash(freq, curr).squeeze()

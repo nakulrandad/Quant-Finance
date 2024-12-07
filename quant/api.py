@@ -130,16 +130,19 @@ def fred_api(id: str):
 
 
 @lru_cache(None)
-def get_rfr(freq: str = "D"):
+def get_rfr(freq: str = "D", curr: str = "INR"):
     assert freq in ["D", "W", "M", "Y"], "Input valid frequency!"
-    raw_data = fred_api("IRSTCI01INM156N").div(100).reset_index().to_numpy()
+    assert curr in ["INR", "USD"], "Input valid currency!"
+    raw_data = (
+        fred_api(const.RISK_FREE_RATE_FRED[curr]).div(100).reset_index().to_numpy()
+    )
     df = pd.DataFrame(
         np.concatenate([raw_data, [[dt.datetime.now(), np.nan]]]),
         columns=["date", "Cash"],
     ).set_index("date")
     df.index = pd.to_datetime(df.index.strftime("%Y-%m-%d"))
-    df = df.resample("B").ffill().div(const.YEAR_BY["day"])
-    sampling = {"D": "B", "W": "W-Wed", "M": "M", "Y": "Y"}
+    df = df.resample("B").ffill().div(const.YEAR_BY["cash_day"])
+    sampling = {"D": "B", "W": "W-Wed", "M": "ME", "Y": "Y"}
     return df.resample(sampling[freq]).sum().iloc[:-1]
 
 
