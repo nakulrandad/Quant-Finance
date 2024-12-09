@@ -68,17 +68,44 @@ class QuantDataFrameAccessor:
     def beta(self, bmk: pd.DataFrame):
         """Portfolio beta to benchmark"""
         x = self._obj
+        n = len(x.columns)
         cov = pd.concat([x, bmk], axis=1).quant.align().cov()
-        beta = (
-            cov.loc[x.columns, bmk.columns]
-            @ cov.loc[bmk.columns, bmk.columns].quant.pinv()
-        )
+        beta = cov.iloc[:n, n:] @ cov.iloc[n:, n:].quant.pinv()
         return beta
+
+    def alpha(self, bmk: pd.DataFrame, yr=const.YEAR_BY["day"]):
+        """Portfolio alpha to benchmark"""
+        x = self._obj
+        beta = x.quant.beta(bmk)
+        alpha = beta.mul(bmk.mean()).sum(axis=1) * yr
+        return alpha
+
+    def tracking_error(self, bmk: pd.DataFrame, yr=const.YEAR_BY["day"]):
+        """Tracking error of the portfolio"""
+        x = self._obj
+        beta = x.quant.beta(bmk)
+        tracking_error = pd.Series()
+        for asset, b in beta.iterrows():
+            tracking_error[asset] = (x[asset] - b.mul(bmk).sum(axis=1)).std()
+        return tracking_error * np.sqrt(yr)
+
+    def information_ratio(self, bmk: pd.DataFrame, yr=const.YEAR_BY["day"]):
+        """Information ratio of the portfolio"""
+        x = self._obj
+        alpha = x.quant.alpha(bmk, yr)
+        te = x.quant.tracking_error(bmk, yr)
+        ir = alpha.div(te)
+        return ir
 
     def d2m(self):
         """Daily to monthly returns"""
         x = self._obj
-        return x.add(1).cumprod().resample("M").last().pct_change()
+        return x.add(1).cumprod().resample("ME").last().pct_change()
+
+    def m2y(self):
+        """Monthly to yearly returns"""
+        x = self._obj
+        return x.add(1).cumprod().resample("Y").last().pct_change()
 
     def a2l(self):
         """Arithmatic to logarithmic returns"""
@@ -144,8 +171,8 @@ class QuantDataFrameAccessor:
     def align(self):
         """Align returns dataframe"""
         x = self._obj
-        fvi = x.quant.first_valid_index()[0]
-        lvi = x.quant.last_valid_index()[0]
+        fvi = x.quant.first_valid_index().iloc[0]
+        lvi = x.quant.last_valid_index().iloc[0]
         df = x.loc[fvi:lvi].add(1).cumprod().ffill().pct_change().dropna(how="all")
         return df
 
