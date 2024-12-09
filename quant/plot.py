@@ -1,5 +1,7 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 from cycler import cycler
 
 
@@ -34,3 +36,12 @@ def set_plot_options(version="bold"):
         plt.rcParams["grid.alpha"] = "0.2"
         plt.rcParams["grid.linewidth"] = 1
         plt.rcParams["grid.linestyle"] = "--"
+
+
+def corr(df, **kwargs):
+    corr = df.corr()
+    ax = sns.heatmap(
+        corr, annot=True, fmt=".0%", cmap="coolwarm", mask=np.triu(corr), **kwargs
+    )
+    ax.grid(False)
+    return ax
