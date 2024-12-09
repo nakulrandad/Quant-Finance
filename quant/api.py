@@ -147,7 +147,7 @@ def get_rfr(freq: str = "D", curr: str = "INR"):
 
 
 def yf_api(ticker, period="max"):
-    """Get returns data from Yahoo Finance
+    """Get ticker data from Yahoo Finance
     period : str
         Valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
     """
@@ -160,6 +160,6 @@ def yf_api(ticker, period="max"):
         params["start"] = period[0]
     else:
         params["period"] = period
-    df = yf.download(**params)["Close"].pct_change()
+    df = yf.download(**params)["Close"]
     df = df.tz_localize(None)
     return df
