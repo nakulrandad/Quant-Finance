@@ -17,13 +17,13 @@ def prepare_returns(data):
     if not isinstance(data, (pd.DataFrame, pd.Series)):
         raise ValueError("Input must be a pandas DataFrame or Series")
     data = data.copy()
-    data = data.replace([np.inf, -np.inf], np.nan).fillna(0)
+    data = data.replace([np.inf, -np.inf], np.nan)
 
     if isinstance(data, pd.DataFrame):
         for col in data.columns:
-            data[col] = pd.to_numeric(data[col], errors="coerce").fillna(0)
+            data[col] = pd.to_numeric(data[col], errors="coerce")
     elif isinstance(data, pd.Series):
-        data = pd.to_numeric(data, errors="coerce").fillna(0)
+        data = pd.to_numeric(data, errors="coerce")
 
     data = data.tz_localize(None)
     return data
@@ -51,9 +51,9 @@ def prepare_prices(data, fill_method="ffill"):
 
     if isinstance(data, pd.DataFrame):
         for col in data.columns:
-            data[col] = pd.to_numeric(data[col], errors="coerce").fillna(0)
+            data[col] = pd.to_numeric(data[col], errors="coerce")
     elif isinstance(data, pd.Series):
-        data = pd.to_numeric(data, errors="coerce").fillna(0)
+        data = pd.to_numeric(data, errors="coerce")
 
     data = data.tz_localize(None)
     return data

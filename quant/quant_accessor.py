@@ -97,6 +97,28 @@ class QuantDataFrameAccessor:
         ir = alpha.div(te)
         return ir
 
+    def hit_ratio(self, bmk=None):
+        """Hit ratio of the portfolio"""
+        x = self._obj
+        hit_ratio = pd.Series()
+        if bmk is None:
+            for col in x.columns:
+                hit_ratio[col] = x[col].dropna().gt(0).mean()
+            return hit_ratio
+        else:
+            assert isinstance(bmk, pd.DataFrame), "Benchmark must be a DataFrame"
+            assert bmk.shape[1] == 1, "Benchmark must have only one column"
+            for col in x.columns:
+                merged = pd.merge(
+                    left=x[[col]],
+                    right=bmk,
+                    left_index=True,
+                    right_index=True,
+                    how="inner",
+                ).quant.align()
+                hit_ratio[col] = (merged.iloc[:, 0] > merged.iloc[:, 1]).mean()
+            return hit_ratio
+
     def d2m(self):
         """Daily to monthly returns"""
         x = self._obj

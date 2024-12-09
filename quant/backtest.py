@@ -18,6 +18,7 @@ def perf_summary(
         "Volatility": lambda x: x.quant.return_vol(yr).iloc[0],
         "Sharpe": lambda x: x.quant.sharpe(yr).iloc[0],
         "Max Drawdown": lambda x: x.quant.max_drawdown()[col][2],
+        "Hit Ratio": lambda x: x.quant.hit_ratio(bmk=bmk).iloc[0],
         **additional_stats,
     }
 
@@ -69,6 +70,7 @@ def perf_summary_table(ret: pd.DataFrame, bmk=None, yr=const.YEAR_BY["day"], **k
         "Volatility",
         "Sharpe",
         "Max Drawdown",
+        "Hit Ratio",
     ]
     if bmk is not None:
         order.extend(
@@ -87,6 +89,7 @@ def perf_summary_table(ret: pd.DataFrame, bmk=None, yr=const.YEAR_BY["day"], **k
                 "Volatility": "{:.2%}",
                 "Sharpe": "{:.2f}",
                 "Max Drawdown": "{:.2%}",
+                "Hit Ratio": "{:.2%}",
                 "Beta": "{:.2f}",
                 "Alpha": "{:.2%}",
                 "Tracking Error": "{:.2%}",
