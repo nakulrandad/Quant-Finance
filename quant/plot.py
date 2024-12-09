@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -40,8 +41,14 @@ def set_plot_options(version="bold"):
 
 def corr(df, **kwargs):
     corr = df.corr()
-    ax = sns.heatmap(
-        corr, annot=True, fmt=".0%", cmap="coolwarm", mask=np.triu(corr), **kwargs
-    )
+    mask = np.diag(np.ones(corr.shape[0], dtype=bool))
+    ax = sns.heatmap(corr, annot=True, fmt=".0%", cmap="coolwarm", mask=mask, **kwargs)
+    for i in range(len(corr.columns)):
+        ax.add_patch(
+            patches.Rectangle(
+                (i, i), 1, 1, fill=True, edgecolor="none", lw=0, facecolor="lightgrey"
+            )
+        )
+        ax.text(i + 0.5, i + 0.5, "100%", color="grey", ha="center", va="center")
     ax.grid(False)
     return ax

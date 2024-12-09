@@ -77,7 +77,7 @@ class QuantDataFrameAccessor:
         """Portfolio alpha to benchmark"""
         x = self._obj
         beta = x.quant.beta(bmk)
-        alpha = beta.mul(bmk.mean()).sum(axis=1) * yr
+        alpha = (x.mean() - beta.mul(bmk.mean()).sum(axis=1)) * yr
         return alpha
 
     def tracking_error(self, bmk: pd.DataFrame, yr=const.YEAR_BY["day"]):

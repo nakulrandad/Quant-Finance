@@ -14,23 +14,28 @@ def perf_summary(
     additional_periods={},
 ):
     stats = {
-        "Excess Return": lambda x: x.quant.return_mean(yr).iloc[0],
-        "Volatility": lambda x: x.quant.return_vol(yr).iloc[0],
-        "Sharpe": lambda x: x.quant.sharpe(yr).iloc[0],
-        "Max Drawdown": lambda x: x.quant.max_drawdown()[col][2],
-        "Hit Ratio": lambda x: x.quant.hit_ratio(bmk=bmk).iloc[0],
+        "Excess Return": lambda x, t: x.loc[t].quant.return_mean(yr).iloc[0],
+        "Volatility": lambda x, t: x.loc[t].quant.return_vol(yr).iloc[0],
+        "Sharpe": lambda x, t: x.loc[t].quant.sharpe(yr).iloc[0],
+        "Max Drawdown": lambda x, t: x.loc[t].quant.max_drawdown()[col][2],
+        "Hit Ratio": lambda x, t: x.loc[t].quant.hit_ratio().iloc[0],
         **additional_stats,
     }
 
     if bmk is not None:
         assert isinstance(bmk, pd.DataFrame), "Benchmark must be a DataFrame"
         assert bmk.shape[1] == 1, "Benchmark must have only one column"
-        stats["Beta"] = lambda x: x.quant.beta(bmk).iloc[0, 0]
-        stats["Alpha"] = lambda x: x.quant.alpha(bmk, yr).iloc[0]
-        stats["Tracking Error"] = lambda x: x.quant.tracking_error(bmk, yr).iloc[0]
-        stats["Information Ratio"] = lambda x: x.quant.information_ratio(bmk, yr).iloc[
-            0
-        ]
+        stats["Hit Ratio"] = (
+            lambda x, t: x.loc[t].quant.hit_ratio(bmk=bmk.loc[t]).iloc[0]
+        )
+        stats["Beta"] = lambda x, t: x.loc[t].quant.beta(bmk.loc[t]).iloc[0, 0]
+        stats["Alpha"] = lambda x, t: x.loc[t].quant.alpha(bmk.loc[t], yr).iloc[0]
+        stats["Tracking Error"] = (
+            lambda x, t: x.loc[t].quant.tracking_error(bmk.loc[t], yr).iloc[0]
+        )
+        stats["Information Ratio"] = (
+            lambda x, t: x.loc[t].quant.information_ratio(bmk.loc[t], yr).iloc[0]
+        )
 
     idx = ret.index
     periods = {
@@ -53,7 +58,7 @@ def perf_summary(
     for s, stat in stats.items():
         for p, period in periods.items():
             for col in ret.columns:
-                val = stat(ret[[col]].loc[period])
+                val = stat(ret[[col]], period)
                 data.append([col, s, p, val])
 
     summary = pd.DataFrame(
