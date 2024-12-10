@@ -173,7 +173,7 @@ class QuantDataFrameAccessor:
         """Rebase price timeseries"""
         x = self._obj
         for col in x.columns:
-            x[col] = x[col].div(x[col].iloc[0]).mul(base)
+            x[col] = x[col].div(x[col].quant.stripna().iloc[0]).mul(base)
         return x
 
     def max_drawdown(self):
@@ -271,6 +271,11 @@ class QuantSeriesAccessor:
     @staticmethod
     def get_currency():
         return shared_manager.get_currency()
+
+    def stripna(self):
+        """Drop NaN from front and back"""
+        x = self._obj
+        return x[x.first_valid_index() : x.last_valid_index()]
 
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""
