@@ -190,6 +190,14 @@ class QuantDataFrameAccessor:
             mdd[col] = ret[col].quant.max_drawdown()
         return mdd
 
+    def variance_ratio_test(self, periods=252):
+        """Variance ratio test for a return timeseries"""
+        ret = self._obj
+        variance_ratios = pd.DataFrame()
+        for col in ret.columns:
+            variance_ratios[col] = ret[col].quant.variance_ratio_test(periods)
+        return variance_ratios
+
     def align(self):
         """Align returns dataframe"""
         x = self._obj
@@ -339,6 +347,24 @@ class QuantSeriesAccessor:
                 mdd[1] = idx
                 mdd[2] = dd
         return mdd
+
+    def variance_ratio_test(self, periods=252):
+        """Variance ratio test for a return timeseries"""
+        ret = self._obj
+        log_returns = ret.quant.a2l()
+
+        variance_ratios = []
+
+        for lag in range(1, periods + 1):
+            aggregated_returns = log_returns.rolling(window=lag).sum().dropna()
+            var_aggregated = aggregated_returns.var()
+
+            var_single = log_returns.var()
+
+            variance_ratio = var_aggregated / (lag * var_single)
+            variance_ratios.append(variance_ratio)
+
+        return pd.Series(variance_ratios, index=range(1, periods + 1), name=ret.name)
 
     @staticmethod
     def fred(id: str):
