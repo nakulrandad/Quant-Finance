@@ -162,8 +162,11 @@ cython_debug/
 # VSCode
 .vscode/
 
-# ignore some local files
+# ignore some private files
 data/private
+analysis/private
+
+# ignore some local files
 analysis/scratchpad.ipynb
 analysis/scratchpad.py
 

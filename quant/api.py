@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import requests
 import yfinance as yf
-from mftool import Mftool
 
+# from mftool import Mftool
 from . import constants as const
 
 
@@ -74,19 +74,19 @@ def amfi(
     return df
 
 
-def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
-    mf = Mftool()
-    data = mf.get_scheme_historical_nav(scid)
-    try:
-        col = data["fund_house"] + "|" + data["scheme_name"]
-    except:
-        print(f"Could not find data for {scid}")
-    nav_df = pd.DataFrame(data["data"]).set_index("date").rename({"nav": col}, axis=1)
-    nav_df.index = pd.to_datetime(nav_df.index, dayfirst=True)
-    return nav_df.sort_index().astype("float").loc[:edate]
+# def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
+#     mf = Mftool()
+#     data = mf.get_scheme_historical_nav(scid)
+#     try:
+#         col = data["fund_house"] + "|" + data["scheme_name"]
+#     except KeyError:
+#         print(f"Could not find data for {scid}")
+#     nav_df = pd.DataFrame(data["data"]).set_index("date").rename({"nav": col}, axis=1)
+#     nav_df.index = pd.to_datetime(nav_df.index, dayfirst=True)
+#     return nav_df.sort_index().astype("float").loc[:edate]
 
 
-def mf_list(filter=None):
+def mf_list(filter=None) -> pd.DataFrame:
     """Get list of mutual funds and sceheme ids
     filter : str or list
         Filter using case insensitive name
@@ -105,7 +105,7 @@ def mf_list(filter=None):
     return data
 
 
-def mf_api(scid: Union[str, float, int]):
+def mf_api(scid: Union[str, float, int]) -> pd.DataFrame:
     """Get historical nav of a mutual fund from mfapi"""
     if isinstance(scid, (int, float)):
         scid = str(int(scid))
@@ -121,7 +121,7 @@ def mf_api(scid: Union[str, float, int]):
     return df
 
 
-def fred_api(id: str):
+def fred_api(id: str) -> pd.DataFrame:
     """Get timeseries from FRED"""
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
     df = pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
@@ -130,7 +130,7 @@ def fred_api(id: str):
 
 
 @lru_cache(None)
-def get_rfr(freq: str = "D", curr: str = "INR"):
+def get_rfr(freq: str = "D", curr: str = "INR") -> pd.DataFrame:
     assert freq in ["D", "W", "M", "Y"], "Input valid frequency!"
     assert curr in ["INR", "USD"], "Input valid currency!"
     raw_data = (
@@ -146,7 +146,7 @@ def get_rfr(freq: str = "D", curr: str = "INR"):
     return df.resample(sampling[freq]).sum().iloc[:-1]
 
 
-def yf_api(ticker, period="max"):
+def yf_api(ticker, period="max") -> pd.DataFrame:
     """Get ticker data from Yahoo Finance
     period : str
         Valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
