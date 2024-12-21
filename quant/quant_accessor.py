@@ -69,7 +69,7 @@ class QuantDataFrameAccessor:
         """Portfolio beta to benchmark"""
         x = self._obj
         n = len(x.columns)
-        cov = pd.concat([x, bmk], axis=1).quant.align().cov()
+        cov = pd.concat([x, bmk], axis=1).quant.ralign().cov()
         beta = cov.iloc[:n, n:] @ cov.iloc[n:, n:].quant.pinv()
         return beta
 
@@ -115,7 +115,7 @@ class QuantDataFrameAccessor:
                     left_index=True,
                     right_index=True,
                     how="inner",
-                ).quant.align()
+                ).quant.ralign()
                 hit_ratio[col] = (merged.iloc[:, 0] > merged.iloc[:, 1]).mean()
             return hit_ratio
 
@@ -198,12 +198,20 @@ class QuantDataFrameAccessor:
             variance_ratios[col] = ret[col].quant.variance_ratio_test(periods)
         return variance_ratios
 
-    def align(self):
+    def ralign(self):
         """Align returns dataframe"""
         x = self._obj
         fvi = x.quant.first_valid_index().iloc[0]
         lvi = x.quant.last_valid_index().iloc[0]
         df = x.loc[fvi:lvi].add(1).cumprod().ffill().pct_change().dropna(how="all")
+        return df
+
+    def palign(self):
+        """Align prices dataframe"""
+        x = self._obj
+        fvi = x.quant.first_valid_index().iloc[0]
+        lvi = x.quant.last_valid_index().iloc[0]
+        df = x.loc[fvi:lvi].ffill()
         return df
 
     def rename(self, cols):

@@ -44,7 +44,7 @@ def amfi_api(mfid, scid, fDate, tDate) -> pd.DataFrame:
             .drop(["null1", "null2"], axis=1)
         )
         nav_df.index = pd.to_datetime(nav_df.index, dayfirst=True, format="mixed")
-    except:
+    except Exception:
         nav_df = pd.DataFrame(columns=["date", "nav"]).set_index("date")
     return nav_df
 
@@ -140,7 +140,7 @@ def get_rfr(freq: str = "D", curr: str = "INR") -> pd.DataFrame:
         np.concatenate([raw_data, [[dt.datetime.now(), np.nan]]]),
         columns=["date", "Cash"],
     ).set_index("date")
-    df.index = pd.to_datetime(df.index.strftime("%Y-%m-%d"))
+    df.index = pd.to_datetime(df.index).strftime("%Y-%m-%d")
     df = df.resample("B").ffill().div(const.YEAR_BY["cash_day"])
     sampling = {"D": "B", "W": "W-Wed", "M": "ME", "Y": "Y"}
     return df.resample(sampling[freq]).sum().iloc[:-1]
