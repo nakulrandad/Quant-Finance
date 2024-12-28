@@ -142,7 +142,7 @@ def get_rfr(freq: str = "D", curr: str = "INR") -> pd.DataFrame:
     ).set_index("date")
     df.index = pd.to_datetime(df.index).strftime("%Y-%m-%d")
     df = df.resample("B").ffill().div(const.YEAR_BY["cash_day"])
-    sampling = {"D": "B", "W": "W-Wed", "M": "ME", "Y": "Y"}
+    sampling = const.SAMPLING
     return df.resample(sampling[freq]).sum().iloc[:-1]
 
 

@@ -11,3 +11,5 @@ RISK_FREE_RATE_FRED = {
     "INR": "IRSTCI01INM156N",  # Monthly Call Money/Interbank Rate
     "USD": "DFF",  # Daily Effective Federal Funds Rate
 }
+
+SAMPLING = {"D": "B", "W": "W-Wed", "M": "ME", "Y": "Y"}
