@@ -12,7 +12,9 @@ class Portfolio:
     def __init__(
         self,
         returns: Union[pd.DataFrame, list],  # as of period end
-        weights: Union[pd.DataFrame, list, None] = None,  # as of period start
+        weights: Union[
+            pd.DataFrame, pd.Series, list, None
+        ] = None,  # as of period start
         rebalance_freq: str = "M",
         no_rebalance: bool = False,
         benchmark: Union[pd.DataFrame, None] = None,
@@ -30,39 +32,7 @@ class Portfolio:
 
         self.assets = self.returns.columns
 
-        if weights is not None:
-            if isinstance(weights, pd.DataFrame):
-                assert self.returns.columns.equals(
-                    self.weights.columns  # type: ignore
-                ), "returns and weights must have same columns"
-                if no_rebalance:
-                    self.weights = weights
-                else:
-                    self.weights = (
-                        weights.resample(constants.SAMPLING[rebalance_freq])
-                        .last()
-                        .loc[self.returns.index[0] : self.returns.index[-1]]
-                    )
-            elif isinstance(weights, list):
-                assert len(weights) == len(
-                    self.assets
-                ), "weights must have same length as assets"
-                self.weights = pd.DataFrame(
-                    np.ones((len(self.returns), len(self.assets))),
-                    index=self.returns.index,
-                    columns=self.assets,
-                ).mul(weights, axis=1)
-                if not no_rebalance:
-                    self.weights = (
-                        self.weights.resample(constants.SAMPLING[rebalance_freq])
-                        .last()
-                        .loc[: self.returns.index[-1]]
-                    )
-        else:
-            self.weights = None
-
-        if weights is not None:
-            self.calc_portfolio_returns()
+        self.set_weights(weights, rebalance_freq, no_rebalance)
 
         self.benchmark = benchmark
 
@@ -90,13 +60,81 @@ class Portfolio:
             )
             updated_weight /= updated_weight.sum()
 
+        return None
+
     def calc_portfolio_returns(self):
         self.calc_effective_weights()
         self.portfolio_returns = (
             (self.eff_weights * self.returns).sum(axis=1).to_frame("portfolio")
         )
+        return None
 
-    def perf_summary(self, bmk=None, yr=constants.YEAR_BY["day"]):
-        if bmk is None:
-            bmk = self.benchmark
-        return backtest.perf_summary_table(self.portfolio_returns, bmk=bmk, yr=yr)
+    def set_benchmark(self, benchmark):
+        self.benchmark = benchmark
+
+    def set_weights(
+        self,
+        weights: Union[pd.DataFrame, pd.Series, list, None],
+        rebalance_freq: str = "M",
+        no_rebalance: bool = False,
+    ):
+        if weights is not None:
+            if isinstance(weights, pd.DataFrame):
+                assert self.returns.columns.equals(
+                    self.weights.columns  # type: ignore
+                ), "returns and weights must have same columns"
+                if no_rebalance:
+                    self.weights = weights
+                else:
+                    self.weights = (
+                        weights.resample(constants.SAMPLING[rebalance_freq])
+                        .last()
+                        .loc[self.returns.index[0] : self.returns.index[-1]]
+                    )
+            elif isinstance(weights, (list, pd.Series)):
+                assert len(weights) == len(
+                    self.assets
+                ), "weights must have same length as assets"
+                self.weights = pd.DataFrame(
+                    np.ones((len(self.returns), len(self.assets))),
+                    index=self.returns.index,
+                    columns=self.assets,
+                ).mul(weights, axis=1)  # type: ignore
+                if not no_rebalance:
+                    self.weights = (
+                        self.weights.resample(constants.SAMPLING[rebalance_freq])
+                        .last()
+                        .loc[: self.returns.index[-1]]
+                    )
+        else:
+            self.weights = None
+
+        if weights is not None:
+            self.calc_portfolio_returns()
+
+        return None
+
+    def update_rebalance_freq(self, rebalance_freq: str, no_rebalance: bool = False):
+        assert self.weights is not None, "Weights are not set"
+        assert (
+            rebalance_freq in constants.SAMPLING
+        ), f"Invalid rebalance frequency! Choose from {list(constants.SAMPLING.keys())}"
+        self.set_weights(self.weights, rebalance_freq, no_rebalance)
+        return None
+
+    def perf_summary(self, benchmark=None, yr=constants.YEAR_BY["day"]):
+        if benchmark is None:
+            benchmark = self.benchmark
+        return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
+
+    def mvo_weights(self, mu=None, sigma=None):
+        if mu is None:
+            mu = self.returns.mean()
+        if sigma is None:
+            sigma = self.returns.cov()
+        weights = sigma.quant.pinv().dot(mu)
+        return weights.div(weights.sum())
+
+    # TODO: Implement Kelly criterion
+    def kelly_weights(self):
+        pass
