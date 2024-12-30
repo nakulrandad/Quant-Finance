@@ -12,4 +12,4 @@ RISK_FREE_RATE_FRED = {
     "USD": "DFF",  # Daily Effective Federal Funds Rate
 }
 
-SAMPLING = {"D": "B", "W": "W-Wed", "M": "ME", "Y": "Y"}
+SAMPLING = {"D": "B", "W": "W-Wed", "M": "ME", "Q": "QE", "Y": "YE"}

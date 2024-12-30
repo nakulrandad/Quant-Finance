@@ -131,11 +131,19 @@ class Portfolio:
             benchmark = self.benchmark
         return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
 
-    def mvo_weights(self, mu=None, sigma=None):
+    def mvo_weights(self, mu=None, sigma=None, rebalance_freq=None):
+        if rebalance_freq is None:
+            rebalance_freq = self.rebalance_freq
         if mu is None:
-            mu = self.returns.mean()
+            if rebalance_freq == "custom":
+                mu = self.returns.mean()
+            else:
+                mu = self.returns.quant.agg_returns(rebalance_freq).mean()
         if sigma is None:
-            sigma = self.returns.cov()
+            if rebalance_freq == "custom":
+                sigma = self.returns.cov()
+            else:
+                sigma = self.returns.quant.agg_returns(rebalance_freq).cov()
         weights = sigma.quant.pinv().dot(mu)
         return weights.div(weights.sum())
 

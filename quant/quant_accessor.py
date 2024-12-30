@@ -119,15 +119,19 @@ class QuantDataFrameAccessor:
                 hit_ratio[col] = (merged.iloc[:, 0] > merged.iloc[:, 1]).mean()
             return hit_ratio
 
-    def d2m(self):
-        """Daily to monthly returns"""
+    def agg_returns(self, freq: str = "M"):
+        """Aggregate high frequency returns to low frequency returns"""
+        assert freq in const.SAMPLING.keys(), "Input valid frequency!"
         x = self._obj
-        return x.add(1).cumprod().resample("ME").last().pct_change()
-
-    def m2y(self):
-        """Monthly to yearly returns"""
-        x = self._obj
-        return x.add(1).cumprod().resample("Y").last().pct_change()
+        return (
+            x.add(1)
+            .cumprod()
+            .resample(const.SAMPLING[freq])
+            .last()
+            .pct_change()
+            .iloc[1:]
+            .loc[: x.index[-1]]
+        )
 
     def a2l(self):
         """Arithmatic to logarithmic returns"""

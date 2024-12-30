@@ -1,6 +1,6 @@
 """Main quant package"""
 
-from . import api, backtest, plot, quant_accessor, utils
+from . import api, backtest, plot, quant_accessor, utils  # noqa
 from .portfolio import Portfolio
 
 __author__ = "Nakul Randad"

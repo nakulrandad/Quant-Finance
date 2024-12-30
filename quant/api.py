@@ -34,8 +34,8 @@ def amfi_api(mfid, scid, fDate, tDate) -> pd.DataFrame:
         r = requests.post(url=url, params=params, headers=headers)
 
         data = pd.read_html(r.text)[0]
-        fund_house = data.iloc[:, 0].name[1]
-        fund_name = data.iloc[:, 0].name[3]
+        fund_house = data.iloc[:, 0].name[1]  # type: ignore
+        fund_name = data.iloc[:, 0].name[3]  # type: ignore
         col = fund_house + "|" + fund_name
 
         nav_df = (
