@@ -1,5 +1,6 @@
 """Portfolio class"""
 
+from copy import deepcopy
 from typing import Union
 
 import numpy as np
@@ -31,6 +32,7 @@ class Portfolio:
 
         self.assets = self.returns.columns.to_list()
 
+        self._validate_rebalance_freq(rebalance_freq)
         self.rebalance_freq = rebalance_freq
 
         self.set_weights(weights, rebalance_freq)
@@ -40,7 +42,10 @@ class Portfolio:
     def __repr__(self):
         return f"Portfolio(assets={self.assets}, start={self.returns.index[0]}, end={self.returns.index[-1]}, rebalance_freq={self.rebalance_freq})"
 
-    def calc_effective_weights(self):
+    def copy(self):
+        return deepcopy(self)
+
+    def _calc_effective_weights(self):
         if self.weights is None:
             raise ValueError(
                 "Weights are not set. Please provide weights to calculate portfolio returns."
@@ -66,8 +71,8 @@ class Portfolio:
 
         return None
 
-    def calc_portfolio_returns(self):
-        self.calc_effective_weights()
+    def _calc_portfolio_returns(self):
+        self._calc_effective_weights()
         self.portfolio_returns = (
             (self.eff_weights * self.returns).sum(axis=1).to_frame("portfolio")
         )
@@ -79,8 +84,13 @@ class Portfolio:
     def set_weights(
         self,
         weights: Union[pd.DataFrame, pd.Series, list, None],
-        rebalance_freq: str = "M",
+        rebalance_freq=None,
     ):
+        if rebalance_freq is None:
+            rebalance_freq = self.rebalance_freq
+
+        self._validate_rebalance_freq(rebalance_freq)
+
         if weights is not None:
             if isinstance(weights, pd.DataFrame):
                 assert self.returns.columns.equals(
@@ -113,15 +123,19 @@ class Portfolio:
             self.weights = None
 
         if weights is not None:
-            self.calc_portfolio_returns()
+            self._calc_portfolio_returns()
 
+        return None
+
+    def _validate_rebalance_freq(self, rebalance_freq):
+        assert (
+            rebalance_freq in constants.SAMPLING or rebalance_freq == "custom"
+        ), f"Invalid rebalance frequency! Choose from {list(constants.SAMPLING.keys()) + ['custom']}"
         return None
 
     def update_rebalance_freq(self, rebalance_freq: str):
         assert self.weights is not None, "Weights are not set"
-        assert (
-            rebalance_freq in constants.SAMPLING
-        ), f"Invalid rebalance frequency! Choose from {list(constants.SAMPLING.keys()) + ['custom']}"
+        self._validate_rebalance_freq(rebalance_freq)
         self.rebalance_freq = rebalance_freq
         self.set_weights(self.weights, rebalance_freq)
         return None
