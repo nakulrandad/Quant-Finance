@@ -47,6 +47,12 @@ class QuantDataFrameAccessor:
         mean = self._obj.mean() * yr
         return mean
 
+    def cagr(self, yr=const.YEAR_BY["day"]):
+        """Returns compound annual growth rate for a timeseries"""
+        x = self._obj
+        cagr = x.quant.a2l().mean().mul(yr).quant.l2a()
+        return cagr
+
     def return_vol(self, yr=const.YEAR_BY["day"]):
         """Returns annualized volatility for a timeseries"""
         vol = self._obj.std() * np.sqrt(yr)
