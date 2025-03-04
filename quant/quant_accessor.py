@@ -1,9 +1,11 @@
 """A flavour of pandas"""
 
 import datetime as dt
+from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 
 from . import api, utils
 from . import constants as const
@@ -207,6 +209,44 @@ class QuantDataFrameAccessor:
         for col in ret.columns:
             variance_ratios[col] = ret[col].quant.variance_ratio_test(periods)
         return variance_ratios
+
+    def factor_model(self, factors: pd.DataFrame, yr=const.YEAR_BY["day"]):
+        """Create a factor model for the portfolio"""
+        port = self._obj
+
+        assert port.index.equals(factors.index), "Align portfolio and factors"
+        assert port.shape[1] == 1, "Portfolio must have only one column"
+
+        subsets = [
+            item
+            for sublist in [
+                np.array(list(combinations(factors.columns, r))).tolist()
+                for r in range(1, len(factors.columns) + 1)
+            ]
+            for item in sublist
+        ]
+
+        cols = (
+            [("alpha", "")]
+            + list(("beta", factor) for factor in factors.columns)
+            + [("ir", ""), ("r2", ""), ("bic", "")]
+        )
+        metric = pd.DataFrame(columns=pd.MultiIndex.from_tuples(cols))
+
+        for subset in subsets:
+            x = factors[subset]
+            model = sm.OLS(port, sm.add_constant(x)).fit()
+            beta = []
+            for fac in factors.columns:
+                beta.append(model.params.get(fac, None))
+            te = np.std(model.resid, ddof=1)
+            metric.loc[" | ".join(ele for ele in subset)] = (
+                [model.params["const"] * yr]
+                + beta
+                + [model.params["const"] * np.sqrt(yr) / te, model.rsquared, model.bic]
+            )
+        metric = metric.sort_values("bic")
+        return metric
 
     def ralign(self):
         """Align returns dataframe"""
