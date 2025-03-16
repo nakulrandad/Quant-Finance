@@ -229,7 +229,7 @@ class QuantDataFrameAccessor:
         cols = (
             [("alpha", "")]
             + list(("beta", factor) for factor in factors.columns)
-            + [("ir", ""), ("r2", ""), ("bic", "")]
+            + [("ir", ""), ("r2", ""), ("aic", ""), ("bic", "")]
         )
         metric = pd.DataFrame(columns=pd.MultiIndex.from_tuples(cols))
 
@@ -243,7 +243,12 @@ class QuantDataFrameAccessor:
             metric.loc[" | ".join(ele for ele in subset)] = (
                 [model.params["const"] * yr]
                 + beta
-                + [model.params["const"] * np.sqrt(yr) / te, model.rsquared, model.bic]
+                + [
+                    model.params["const"] * np.sqrt(yr) / te,
+                    model.rsquared,
+                    model.aic,
+                    model.bic,
+                ]
             )
         metric = metric.sort_values("bic")
         return metric

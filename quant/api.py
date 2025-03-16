@@ -160,6 +160,6 @@ def yf_api(ticker, period="max") -> pd.DataFrame:
         params["start"] = period[0]
     else:
         params["period"] = period
-    df = yf.download(**params)["Close"]
+    df: pd.DataFrame = yf.download(**params)["Close"]  # type: ignore
     df = df.tz_localize(None)
     return df
