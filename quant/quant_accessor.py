@@ -429,6 +429,13 @@ class QuantSeriesAccessor:
 
         return pd.Series(variance_ratios, index=range(1, periods + 1), name=ret.name)
 
+    def beta(self, bmk: pd.Series):
+        """Portfolio beta to benchmark"""
+        x = self._obj
+        cov = pd.concat([x, bmk], axis=1).quant.ralign().cov()
+        beta = cov.iloc[0, 1] / cov.iloc[1, 1]
+        return beta
+
     @staticmethod
     def fred(id: str):
         return pd.DataFrame().quant.fred(id).squeeze()

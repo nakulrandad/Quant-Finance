@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from cycler import cycler
+from matplotlib.ticker import FuncFormatter
 
 
 def set_plot_options(version="bold"):
@@ -65,4 +66,9 @@ def corr(df, **kwargs):
         )
         ax.text(i + 0.5, i + 0.5, "100%", color="grey", ha="center", va="center")
     ax.grid(False)
+    return ax
+
+
+def set_yaxis_percent(ax):
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f"{y:.1%}"))
     return ax
