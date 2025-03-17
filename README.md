@@ -11,7 +11,7 @@ A collection of tools, scripts, and resources for quantitative finance, covering
 
 ## **Introduction**  
 
-Quantitative finance leverages mathematical models, statistical techniques, and computational tools to analyze financial markets and develop trading strategies. This repository provides a structured collection of scripts and resources to support research, modeling, and algorithmic trading.  
+Quantitative finance leverages mathematical models, statistical techniques, and computational tools to analyze financial markets and develop trading strategies. This repository provides a structured collection of scripts and resources to support research, modeling, and algorithmic trading. The backbone of this project is `quant` accessor that is built on top of `pandas.DataFrame` to add functionalities relevant to financial data analysis. The `backtest` module helps with performance backtesting and risk decomposition. The `Portfolio` class is a customizable framework to create portfolios that account for rebalancing.
 
 ## **Installation**  
 
@@ -27,12 +27,7 @@ pip install .  # Standard installation
 ```
 
 ## **Usage**  
-
-Each project within the repository includes a dedicated README with specific setup and execution instructions. To get started:  
-
-1. Navigate to the relevant project directory.  
-2. Follow the setup instructions provided.  
-3. Run the scripts or notebooks as described.  
+The `analysis` folder contains some sample analysis to showcase some of the functionalities of quant package. This package is actively under development and any feedback and/or contribution would be highly appreciated. 
 
 ## **License**  
 
