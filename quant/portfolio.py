@@ -10,6 +10,10 @@ from . import backtest, constants, utils
 
 
 class Portfolio:
+    """A class to represent a group of asset returns. The assets can be assigned
+    weights and rebalanced to create a portfolio for backtesting.
+    """
+
     def __init__(
         self,
         returns: Union[pd.DataFrame, list],  # as of period end
@@ -19,9 +23,6 @@ class Portfolio:
         rebalance_freq: str = "M",
         benchmark: Union[pd.DataFrame, None] = None,
     ):
-        """A class to represent a group of asset returns. The assets can be assigned
-        weights and rebalanced to create a portfolio for backtesting.
-        """
         if isinstance(returns, pd.DataFrame):
             self.returns = returns
         elif isinstance(returns, list):

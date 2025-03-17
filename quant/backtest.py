@@ -178,19 +178,27 @@ def perf_report(
     return None
 
 
-def rolling_multibeta(ret: pd.DataFrame, bmk: pd.DataFrame, window=252):
+def rolling_multibeta(
+    ret: pd.DataFrame, factors: pd.DataFrame, window=252, statistic: str = "beta"
+):
     assert ret.shape[1] == 1, "Returns must have only one column"
-    beta = pd.DataFrame(index=ret.index, columns=ret.columns)
+    assert factors.index.equals(ret.index), "Index of returns and factors must match"
+    assert statistic in ["beta", "corr"], "Invalid statistic"
+    beta = pd.DataFrame(index=ret.index, columns=factors.columns)
     for idx in range(window, len(ret)):
-        beta.iloc[idx] = (
-            ret.iloc[idx - window : idx].quant.beta(bmk.iloc[idx - window : idx]).values
+        beta.iloc[idx] = ret.iloc[idx + 1 - window : idx + 1].quant.beta(
+            factors.iloc[idx + 1 - window : idx + 1]
         )
+        if statistic == "corr":
+            ret_vol = ret.iloc[idx + 1 - window : idx + 1].quant.return_vol().iloc[0]
+            factors_vol = factors.iloc[idx + 1 - window : idx + 1].quant.return_vol()
+            beta.iloc[idx] = beta.iloc[idx] / ret_vol * factors_vol
     beta = beta.iloc[window:]
     return beta
 
 
 # TODO: Add risk decomposition
-def risk_decomposition(ret: pd.DataFrame, bmk: pd.DataFrame, window=252):
+def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
     pass
 
 
