@@ -197,9 +197,52 @@ def rolling_multibeta(
     return beta
 
 
-# TODO: Add risk decomposition
-def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
-    pass
+def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame):
+    """Decompose portfolio risk into factor contributions"""
+    assert ret.shape[1] == 1, "Portfolio returns should have only one column."
+    assert ret.index.equals(factors.index), "Index of returns and factors must match."
+
+    y = ret.values.flatten()
+    X = factors.values
+
+    betas = np.linalg.inv(X.T @ X) @ X.T @ y
+
+    factor_cov = np.cov(X, rowvar=False)
+    portfolio_var = np.var(y)
+
+    factor_contributions = betas * (factor_cov @ betas)
+    factor_contributions = np.append(
+        factor_contributions, portfolio_var - factor_contributions.sum()
+    )
+
+    factor_contributions_pct = factor_contributions / portfolio_var
+
+    results = pd.DataFrame(
+        {
+            "Beta": np.append(betas, np.nan),
+            "Variance Contribution": factor_contributions,
+            "Percentage Contribution": factor_contributions_pct,
+        },
+        index=factors.columns.tolist() + ["Residual"],
+    )
+    return results
+
+
+def rolling_risk_decomp(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
+    assert ret.shape[1] == 1, "Portfolio returns should have only one column."
+    assert ret.index.equals(factors.index), "Index of returns and factors must match."
+
+    results = pd.DataFrame(
+        columns=factors.columns.tolist() + ["Residual"], index=ret.index
+    )
+    for idx in range(window, len(ret)):
+        sub_ret = ret.iloc[idx + 1 - window : idx + 1]
+        sub_factors = factors.iloc[idx + 1 - window : idx + 1]
+        results.iloc[idx] = risk_decomposition(sub_ret, sub_factors)[
+            "Percentage Contribution"
+        ]
+    results = results.iloc[window:]
+    return results
 
 
 # TODO: Add risk report

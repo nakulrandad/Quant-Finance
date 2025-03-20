@@ -45,6 +45,11 @@ class QuantDataFrameAccessor:
     def get_currency():
         return shared_manager.get_currency()
 
+    # TODO: Implement describe method
+    def describe(self):
+        """Describe the timeseries"""
+        pass
+
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""
         mean = self._obj.mean() * yr
