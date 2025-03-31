@@ -13,3 +13,6 @@ RISK_FREE_RATE_FRED = {
 }
 
 SAMPLING = {"D": "B", "W": "W-Wed", "M": "ME", "Q": "QE", "Y": "YE"}
+
+# TODO: Add factors
+# FACTOR_SET = {}

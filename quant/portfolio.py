@@ -10,6 +10,10 @@ from . import backtest, constants, utils
 
 
 class Portfolio:
+    """A class to represent a group of asset returns. The assets can be assigned
+    weights and rebalanced to create a portfolio for backtesting.
+    """
+
     def __init__(
         self,
         returns: Union[pd.DataFrame, list],  # as of period end
@@ -46,6 +50,9 @@ class Portfolio:
         return deepcopy(self)
 
     def _calc_effective_weights(self):
+        """Calculate weights that align with returns frequency using self.weights accounting
+        for intra rebalancing weight fluctuations due to returns.
+        """
         if self.weights is None:
             raise ValueError(
                 "Weights are not set. Please provide weights to calculate portfolio returns."
@@ -86,6 +93,9 @@ class Portfolio:
         weights: Union[pd.DataFrame, pd.Series, list, None],
         rebalance_freq=None,
     ):
+        """Set weights across assets using rebalance frequency. When using custom rebalance frequency,
+        weights are assigned with no processing.
+        """
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
 
@@ -105,9 +115,9 @@ class Portfolio:
                         .loc[self.returns.index[0] : self.returns.index[-1]]
                     )
             elif isinstance(weights, (list, pd.Series)):
-                assert len(weights) == len(
-                    self.assets
-                ), "weights must have same length as assets"
+                assert len(weights) == len(self.assets), (
+                    "weights must have same length as assets"
+                )
                 self.weights = pd.DataFrame(
                     np.ones((len(self.returns), len(self.assets))),
                     index=self.returns.index,
@@ -128,9 +138,9 @@ class Portfolio:
         return None
 
     def _validate_rebalance_freq(self, rebalance_freq):
-        assert (
-            rebalance_freq in constants.SAMPLING or rebalance_freq == "custom"
-        ), f"Invalid rebalance frequency! Choose from {list(constants.SAMPLING.keys()) + ['custom']}"
+        assert rebalance_freq in constants.SAMPLING or rebalance_freq == "custom", (
+            f"Invalid rebalance frequency! Choose from {list(constants.SAMPLING.keys()) + ['custom']}"
+        )
         return None
 
     def update_rebalance_freq(self, rebalance_freq: str):

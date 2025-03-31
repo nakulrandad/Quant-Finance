@@ -5,6 +5,7 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 import statsmodels.api as sm
 
 from . import api, utils
@@ -44,6 +45,11 @@ class QuantDataFrameAccessor:
     def get_currency():
         return shared_manager.get_currency()
 
+    # TODO: Implement describe method
+    def describe(self):
+        """Describe the timeseries"""
+        pass
+
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""
         mean = self._obj.mean() * yr
@@ -59,6 +65,16 @@ class QuantDataFrameAccessor:
         """Returns annualized volatility for a timeseries"""
         vol = self._obj.std() * np.sqrt(yr)
         return vol
+
+    def skew(self, yr=const.YEAR_BY["day"]):
+        """Returns skewness of the timeseries"""
+        x = self._obj
+        skewness = (
+            x.quant.a2l()
+            .apply(lambda x: stats.skew(x, bias=False, nan_policy="omit"))
+            .div(np.sqrt(yr))
+        )
+        return skewness
 
     def sharpe(self, yr=const.YEAR_BY["day"]):
         """Returns sharpe ratio of the timeseries.
@@ -364,6 +380,12 @@ class QuantSeriesAccessor:
         x = self._obj
         sharpe = x.quant.return_mean(yr) / x.quant.return_vol(yr)
         return sharpe
+
+    def skew(self, yr=const.YEAR_BY["day"]):
+        """Returns skewness of the timeseries"""
+        x = self._obj
+        skewness = stats.skew(x, bias=False, nan_policy="omit") / np.sqrt(yr)
+        return skewness
 
     def a2l(self):
         """Arithmatic to logarithmic returns"""
