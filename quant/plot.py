@@ -52,10 +52,10 @@ def set_plot_options(version="bold"):
                 "grid.linestyle": "--",
             }
         )
+    return None
 
 
-def corr(df, **kwargs):
-    corr = df.corr()
+def heatmap(corr, **kwargs):
     mask = np.diag(np.ones(corr.shape[0], dtype=bool))
     ax = sns.heatmap(corr, annot=True, fmt=".0%", cmap="coolwarm", mask=mask, **kwargs)
     for i in range(len(corr.columns)):

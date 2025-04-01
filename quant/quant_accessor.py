@@ -1,4 +1,4 @@
-"""A flavour of pandas"""
+"""A layer over pandas"""
 
 import datetime as dt
 from itertools import combinations
@@ -45,10 +45,24 @@ class QuantDataFrameAccessor:
     def get_currency():
         return shared_manager.get_currency()
 
-    # TODO: Implement describe method
     def describe(self):
         """Describe the timeseries"""
-        pass
+        x = self._obj
+        summary = pd.DataFrame(
+            {
+                "Start Date": x.quant.first_valid_index(),
+                "End Date": x.quant.last_valid_index(),
+                "Num Points": x.apply(lambda s: s.quant.stripna().count()),
+                "Missing Values": x.apply(lambda s: s.quant.stripna().isna().sum()),
+                "Frequency": x.apply(
+                    lambda s: s.dropna().index.to_series().diff().dropna().mode()[0]
+                ),
+                "Min": x.min(),
+                "Max": x.max(),
+                "Mean": x.mean(),
+            }
+        ).T
+        return summary
 
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""
