@@ -2,18 +2,28 @@ import numpy as np
 import pandas as pd
 
 
-def fix_index(data):
-    """Fix index of the data"""
-    if not isinstance(data, (pd.DataFrame, pd.Series)):
-        raise ValueError("Input must be a pandas DataFrame or Series")
-    data = data.copy()
-    data.index = pd.to_datetime(data.index, format="mixed")
-    data.index = data.index.strftime("%Y-%m-%d")
-    return data
-
-
 def fix_low_freq_index(low_freq, high_freq):
-    """Move low frequency index to next nearest high frequency index"""
+    """Align low frequency time series index to the nearest following timestamps
+    in a higher frequency time series index.
+
+    This function adjusts the index of a lower frequency pandas DataFrame or
+    Series so that each timestamp is moved forward to the nearest greater than
+    or equal timestamp in the high frequency index.
+
+    Example:
+        >>> import pandas as pd
+        >>> low = pd.Series([100, 200], index=pd.to_datetime(['2023-01-02', '2023-01-06']))
+        >>> high = pd.Series(range(6), index=pd.to_datetime([
+        ...     '2023-01-01',
+        ...     '2023-01-03',
+        ...     '2023-01-04',
+        ...     '2023-01-06',
+        ... ]))
+        >>> fix_low_freq_index(low, high)
+        2023-01-03    100
+        2023-01-06    200
+        dtype: int64
+    """
     if not isinstance(low_freq, (pd.DataFrame, pd.Series)):
         raise ValueError("Input must be a pandas DataFrame or Series")
     if not isinstance(high_freq, (pd.DataFrame, pd.Series)):
