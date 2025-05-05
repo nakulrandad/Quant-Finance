@@ -58,7 +58,7 @@ def amfi(
     sdate = edate - dt.timedelta(days=5 * 360)
     df = amfi_api(mfid, scid, sdate, edate)
     col = df.columns[0]
-    if len(df) != 0:
+    if df:
         df2 = amfi(mfid, scid, sdate)
         df = (
             pd.concat(
