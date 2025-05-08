@@ -58,7 +58,7 @@ def amfi(
     sdate = edate - dt.timedelta(days=5 * 360)
     df = amfi_api(mfid, scid, sdate, edate)
     col = df.columns[0]
-    if len(df) != 0:
+    if not df.empty:
         df2 = amfi(mfid, scid, sdate)
         df = (
             pd.concat(
@@ -124,7 +124,11 @@ def mf_api(scid: Union[str, float, int]) -> pd.DataFrame:
 def fred_api(id: str) -> pd.DataFrame:
     """Get timeseries from FRED"""
     url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={id}"
-    df = pd.read_csv(url).rename({"DATE": "date"}, axis=1).set_index("date")
+    df = (
+        pd.read_csv(url)
+        .rename({"DATE": "date", "observation_date": "date"}, axis=1)
+        .set_index("date")
+    )
     df.index = pd.to_datetime(df.index)
     return df
 
@@ -140,10 +144,10 @@ def get_rfr(freq: str = "D", curr: str = "INR") -> pd.DataFrame:
         np.concatenate([raw_data, [[dt.datetime.now(), np.nan]]]),
         columns=["date", "Cash"],
     ).set_index("date")
-    df.index = pd.to_datetime(df.index).strftime("%Y-%m-%d")
-    df = df.resample("B").ffill().div(const.YEAR_BY["cash_day"])
-    sampling = const.SAMPLING
-    return df.resample(sampling[freq]).sum().iloc[:-1]
+    df.index = pd.to_datetime(df.index).normalize()
+    df = df.resample("D").ffill().div(const.YEAR_BY["cash_day"])
+    df = df.resample(const.SAMPLING[freq]).sum().iloc[:-1]
+    return df.tz_localize(None)
 
 
 def yf_api(ticker, period="max") -> pd.DataFrame:

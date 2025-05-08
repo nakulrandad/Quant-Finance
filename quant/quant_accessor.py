@@ -305,9 +305,7 @@ class QuantDataFrameAccessor:
 
     def first_valid_index(self):
         x = self._obj
-        fvi = []
-        for col in x.columns:
-            fvi.append({"asset": col, "date": x[col].first_valid_index()})
+        fvi = [{"asset": col, "date": x[col].first_valid_index()} for col in x.columns]
         return (
             pd.DataFrame(fvi)
             .sort_values(by="date", ascending=False)
@@ -318,8 +316,7 @@ class QuantDataFrameAccessor:
     def last_valid_index(self):
         x = self._obj
         lvi = []
-        for col in x.columns:
-            lvi.append({"asset": col, "date": x[col].last_valid_index()})
+        lvi = [{"asset": col, "date": x[col].last_valid_index()} for col in x.columns]
         return pd.DataFrame(lvi).sort_values(by="date").set_index("asset").squeeze()
 
     @staticmethod
@@ -339,9 +336,7 @@ class QuantDataFrameAccessor:
         """Get historical nav of a mutual fund"""
         if isinstance(scheme_ids, (int, float, str)):
             scheme_ids = [scheme_ids]
-        data = []
-        for scid in scheme_ids:
-            data.append(api.mf_api(scid).loc[:end])
+        data = [api.mf_api(scid).loc[:end] for scid in scheme_ids]
         return pd.concat(data, axis=1)
 
     @staticmethod

@@ -10,48 +10,69 @@ from matplotlib.ticker import FuncFormatter
 def set_plot_options(version="bold"):
     if version == "bold":
         # Define a consistent color cycle for plots
-        mpl.rcParams["axes.prop_cycle"] = cycler(
+        plt.rcParams["axes.prop_cycle"] = cycler(
             color=[
-                "blue",
-                "red",
-                "green",
-                "purple",
-                "orange",
-                "brown",
-                "cyan",
-                "magenta",
-                "gold",
-                "navy",
-                "darkorange",
-                "olive",
-                "royalblue",
-                "crimson",
-                "darkgreen",
+                "blue",  # Primary blue
+                "red",  # Primary red
+                "green",  # Primary green
+                "purple",  # Primary purple
+                "orange",  # Primary orange
+                "brown",  # Primary brown
+                "pink",  # Primary pink
+                "gray",  # Primary gray
+                "olive",  # Olive green
+                "cyan",  # Primary cyan
+                "magenta",  # Primary magenta
+                "yellow",  # Primary yellow
+                "navy",  # Dark blue
+                "maroon",  # Dark red
+                "lime",  # Light green
+                "teal",  # Blue-green
+                "aqua",  # Light blue
             ]
         )
 
         # Set line properties
-        plt.rcParams.update({"lines.linewidth": 1, "lines.color": "black"})
+        plt.rcParams.update({
+            "lines.linewidth": 1,
+            "lines.color": "black",
+            "lines.markersize": 4,
+            "lines.markeredgewidth": 1,
+        })
 
         # Configure legend appearance
-        plt.rcParams.update(
-            {
-                "legend.edgecolor": "black",
-                "legend.fancybox": False,
-                "legend.framealpha": 1,
-            }
-        )
+        plt.rcParams.update({
+            "legend.edgecolor": "black",
+            "legend.fancybox": False,
+            "legend.framealpha": 1,
+            "legend.loc": "best",
+            "legend.fontsize": 10,
+        })
 
         # Enable and style grid
-        plt.rcParams.update(
-            {
-                "axes.grid": True,
-                "grid.color": "gray",
-                "grid.alpha": 0.3,
-                "grid.linewidth": 1,
-                "grid.linestyle": "--",
-            }
-        )
+        plt.rcParams.update({
+            "axes.grid": True,
+            "grid.color": "gray",
+            "grid.alpha": 0.25,
+            "grid.linewidth": 0.5,
+            "grid.linestyle": "--",
+        })
+
+        # Additional time series specific settings
+        plt.rcParams.update({
+            "axes.labelsize": 11,
+            "axes.titlesize": 12,
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 10,
+            "figure.figsize": (10, 6),
+            "figure.dpi": 100,
+            "savefig.dpi": 300,
+            "savefig.bbox": "tight",
+            "savefig.pad_inches": 0.1,
+        })
+
+        # Force matplotlib to use the default style before applying custom settings
+        plt.style.use('default')
     return None
 
 

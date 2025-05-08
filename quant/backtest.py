@@ -1,5 +1,7 @@
 """Analyse historical performance"""
 
+from typing import Literal
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -48,14 +50,8 @@ def perf_summary(
     }
 
     num_yr = len(idx) / yr
-    if num_yr >= 2:
-        periods["02YR"] = idx[-2 * yr :]
-        if num_yr >= 3:
-            periods["03YR"] = idx[-3 * yr :]
-            if num_yr >= 5:
-                periods["05YR"] = idx[-5 * yr :]
-                if num_yr >= 10:
-                    periods["10YR"] = idx[-10 * yr :]
+    year_periods = {2: "02YR", 3: "03YR", 5: "05YR", 10: "10YR"}
+    periods.update({p: idx[-y * yr :] for y, p in year_periods.items() if num_yr >= y})
 
     data = []
     for s, stat in stats.items():
@@ -179,11 +175,24 @@ def perf_report(
 
 
 def rolling_multibeta(
-    ret: pd.DataFrame, factors: pd.DataFrame, window=252, statistic: str = "beta"
-):
-    assert ret.shape[1] == 1, "Returns must have only one column"
-    assert factors.index.equals(ret.index), "Index of returns and factors must match"
-    assert statistic in ["beta", "corr"], "Invalid statistic"
+    ret: pd.DataFrame,
+    factors: pd.DataFrame,
+    window: int = 252,
+    statistic: Literal["beta", "corr"] = "beta",
+) -> pd.DataFrame:
+    """Calculate rolling multi-beta or correlation between returns and factors."""
+    # Validate inputs
+    if not isinstance(ret, pd.DataFrame) or not isinstance(factors, pd.DataFrame):
+        raise TypeError("Returns and factors must be pandas DataFrames")
+    if ret.shape[1] != 1:
+        raise ValueError("Returns must have only one column")
+    if not factors.index.equals(ret.index):
+        raise ValueError("Index of returns and factors must match")
+    if window <= 0 or not isinstance(window, int):
+        raise ValueError("Window must be a positive integer")
+    if statistic not in ["beta", "corr"]:
+        raise ValueError("Invalid statistic, must be 'beta' or 'corr'")
+
     beta = pd.DataFrame(index=ret.index, columns=factors.columns)
     for idx in range(window, len(ret)):
         beta.iloc[idx] = ret.iloc[idx + 1 - window : idx + 1].quant.beta(
