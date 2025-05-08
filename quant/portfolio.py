@@ -5,6 +5,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
 
 from . import backtest, constants, utils
 
@@ -156,24 +157,83 @@ class Portfolio:
         return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
 
     def mvo_weights(self, mu=None, sigma=None, rebalance_freq=None):
+        """Calculate weights for a portfolio that maximizes the Sharpe ratio."""
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
+
         if mu is None:
             if rebalance_freq == "custom":
                 mu = self.returns.mean()
             else:
                 mu = self.returns.quant.agg_returns(rebalance_freq).mean()
+
         if sigma is None:
             if rebalance_freq == "custom":
                 sigma = self.returns.cov()
             else:
                 sigma = self.returns.quant.agg_returns(rebalance_freq).cov()
+
         weights = sigma.quant.pinv().dot(mu)
         return weights.div(weights.sum())
 
-    # TODO: Implement Kelly criterion
-    def kelly_weights(self):
-        pass
+    def kelly_weights(self, rebalance_freq=None, constraints=None):
+        """Calculate optimal weights using the Kelly criterion by maximizing log returns.
+
+        Args:
+            rebalance_freq: Optional frequency for returns aggregation
+            constraints: Optional dictionary of constraints for the optimization
+                        (e.g., `bounds` on weights, `constraints` on sum of weights)
+                        Default: weights sum to 1 and are between 0 and 1
+
+        Returns:
+            pd.Series: Optimal weights for each asset
+        """
+        if rebalance_freq is None:
+            rebalance_freq = self.rebalance_freq
+
+        if rebalance_freq == "custom":
+            returns = self.returns
+        else:
+            returns = self.returns.quant.agg_returns(rebalance_freq)
+
+        n_assets = len(self.assets)
+
+        def neg_log_return(weights):
+            """Negative of the expected log return for minimization."""
+            portfolio_returns = returns.dot(weights)
+            return -np.mean(np.log(1 + portfolio_returns))
+
+        # Default constraints: weights sum to 1 and are non-negative
+        if constraints is None:
+            constraints = [
+                {"type": "eq", "fun": lambda x: np.sum(x) - 1},  # weights sum to 1
+            ]
+            bounds = [(0, 1) for _ in range(n_assets)]  # weights between 0 and 1
+        else:
+            bounds = constraints.get("bounds", [(0, 1) for _ in range(n_assets)])
+            constraints = constraints.get(
+                "constraints", [{"type": "eq", "fun": lambda x: np.sum(x) - 1}]
+            )
+
+        # Initial guess: equal weights
+        initial_weights = np.array([1 / n_assets] * n_assets)
+
+        # Optimize
+        result = minimize(
+            neg_log_return,
+            initial_weights,
+            method="SLSQP",
+            bounds=bounds,
+            constraints=constraints,
+            options={"ftol": 1e-8, "disp": False},
+        )
+
+        if not result.success:
+            raise ValueError(f"Optimization failed: {result.message}")
+
+        weights = pd.Series(result.x, index=self.assets)
+
+        return weights
 
     # TODO: Implement risk parity weights
     def risk_parity_weights(self):
