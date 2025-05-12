@@ -7,16 +7,16 @@ with open("README.md") as readme_file:
     long_description = readme_file.read()
 
 setup(
-    name="quant",  # Package name
-    version="0.1.0",  # Version number
+    name="quant",
+    version="0.1.0",
     author="Nakul Randad",
     author_email="nakulrandad@gmail.com",
     description="A quantitative finance package",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/nakulrandad/Quant-Finance",
-    packages=find_packages(),  # Finds all packages inside the directory
-    install_requires=requirements,  # Dependencies from requirements.txt
+    packages=find_packages(),
+    install_requires=requirements,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
