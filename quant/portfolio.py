@@ -177,6 +177,7 @@ class Portfolio:
             benchmark = self.benchmark
         return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
 
+    # TODO: Use scipy.optimize.minimize to optimize weights
     def mvo_weights(self, mu=None, sigma=None, rebalance_freq=None):
         """Calculate weights for a portfolio that maximizes the Sharpe ratio."""
         if rebalance_freq is None:
