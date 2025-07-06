@@ -45,7 +45,28 @@ class Portfolio:
         self.benchmark = benchmark
 
     def __repr__(self):
-        return f"Portfolio(assets={self.assets}, start={self.returns.index[0]}, end={self.returns.index[-1]}, rebalance_freq={self.rebalance_freq})"
+        """Return a string representation of the portfolio."""
+        # Basic portfolio info
+        info = [
+            f"Portfolio(assets={len(self.assets)})",
+            f"Period: {self.returns.index[0].strftime('%Y-%m-%d')} to {self.returns.index[-1].strftime('%Y-%m-%d')}",
+            f"Rebalance: {self.rebalance_freq}",
+        ]
+        
+        # Add assets if there are few enough
+        if len(self.assets) <= 5:
+            info.append(f"Assets: {', '.join(self.assets)}")
+        else:
+            info.append(f"Assets: {', '.join(self.assets[:3])}... and {len(self.assets)-3} more")
+            
+        # Add portfolio statistics if weights are set
+        if self.weights is not None:
+            latest_weights = self.weights.iloc[-1]
+            top_holdings = latest_weights.nlargest(3)
+            holdings_str = ", ".join([f"{asset}: {weight:.1%}" for asset, weight in top_holdings.items()])
+            info.append(f"Top Holdings: {holdings_str}")
+        
+        return "\n".join(info)
 
     def copy(self):
         return deepcopy(self)
@@ -156,6 +177,7 @@ class Portfolio:
             benchmark = self.benchmark
         return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
 
+    # TODO: Use scipy.optimize.minimize to optimize weights
     def mvo_weights(self, mu=None, sigma=None, rebalance_freq=None):
         """Calculate weights for a portfolio that maximizes the Sharpe ratio."""
         if rebalance_freq is None:

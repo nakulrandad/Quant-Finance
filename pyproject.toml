@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant"
+version = "0.1.0"
+authors = [
+  { name="Nakul Randad", email="nakulrandad@gmail.com" },
+]
+description = "A quantitative finance package"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "cycler>=0.11.0",
+    "Jinja2>=3.1.5",
+    "matplotlib>=3.7.2",
+    "numpy>=1.25.1",
+    "pandas>=2.0.3",
+    "Requests>=2.32.0",
+    "seaborn>=0.13.2",
+    "statsmodels>=0.14.4",
+    "yfinance>=0.2.59",
+]
+
+[project.urls]
+Homepage = "https://github.com/nakulrandad/Quant-Finance"
+
+[tool.setuptools]
+packages = ["quant"]

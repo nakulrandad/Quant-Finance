@@ -54,7 +54,7 @@ def set_plot_options(version="bold"):
             "axes.grid": True,
             "grid.color": "gray",
             "grid.alpha": 0.25,
-            "grid.linewidth": 0.5,
+            "grid.linewidth": 1,
             "grid.linestyle": "--",
         })
 
@@ -71,8 +71,6 @@ def set_plot_options(version="bold"):
             "savefig.pad_inches": 0.1,
         })
 
-        # Force matplotlib to use the default style before applying custom settings
-        plt.style.use('default')
     return None
 
 

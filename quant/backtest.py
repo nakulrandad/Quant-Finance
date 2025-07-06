@@ -135,20 +135,20 @@ def perf_report(
     display(dd_table)
 
     # Plot cumulative returns
-    _, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(10, 5))
     cumret.plot(ax=ax, title="Growth of Dollar")
     if bmk is not None:
         bmk.quant.to_prices().plot(ax=ax, color="black", linestyle="--")
 
     # Plot rolling return
-    _, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(10, 5))
     ret.rolling(window=window).apply(lambda x: x.quant.return_mean(yr)).iloc[
         window - 1 :
     ].plot(ax=ax, title="Rolling Return")
     plot.set_yaxis_percent(ax)
 
     # Plot rolling volatility
-    _, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(10, 5))
     ret.rolling(window=window).apply(lambda x: x.quant.return_vol(yr)).iloc[
         window - 1 :
     ].plot(ax=ax, title="Rolling Volatility")
@@ -157,14 +157,23 @@ def perf_report(
     # Plot drawdown
     running_max = cumret.cummax()
     drawdown = (cumret - running_max) / running_max
-    _, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(10, 5))
+    
     drawdown.plot(ax=ax, title="Drawdown")
+    for col in drawdown.columns:
+        ax.fill_between(
+            drawdown.index,
+            drawdown[col],
+            0,
+            alpha=0.3,
+        )
+    
     ax.hlines(0, drawdown.index[0], drawdown.index[-1], "black", "--")
     plot.set_yaxis_percent(ax)
 
     # Plot rolling beta to benchmark
     if bmk is not None:
-        _, ax = plt.subplots(figsize=(8, 4))
+        _, ax = plt.subplots(figsize=(10, 5))
         ret.rolling(window=window).apply(lambda x: x.quant.beta(bmk)).iloc[
             window - 1 :
         ].plot(ax=ax, title="Rolling Beta to Benchmark")
@@ -262,8 +271,19 @@ def risk_report(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
     )
     display(decomp_table)
 
+    # Correlation heatmap
+    _, ax = plt.subplots(figsize=(5, 4))
+    corr = pd.merge(ret, factors, left_index=True, right_index=True).corr()
+    ax = plot.heatmap(corr, ax=ax)
+    ax.set_title("Correlations")
+
+    # Rolling multi beta to factors
+    _, ax = plt.subplots(figsize=(10, 5))
+    rolling_beta = rolling_multibeta(ret, factors, window=window)
+    rolling_beta.plot(ax=ax, title="Rolling Multi Beta to Factors")
+    
     # Rolling risk decomposition
-    _, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(10, 5))
     rolling_decomp = rolling_risk_decomp(ret, factors, window=window)
     rolling_decomp.mul(100).plot(
         ax=ax,
@@ -274,17 +294,6 @@ def risk_report(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
         ylabel="Risk Contribution (in %)",
         ylim=(0, 100),
     )
-
-    # Correlation heatmap
-    _, ax = plt.subplots(figsize=(5, 4))
-    corr = pd.merge(ret, factors, left_index=True, right_index=True).corr()
-    ax = plot.heatmap(corr, ax=ax)
-    ax.set_title("Correlations")
-
-    # Rolling multi beta to factors
-    _, ax = plt.subplots(figsize=(8, 4))
-    rolling_beta = rolling_multibeta(ret, factors, window=window)
-    rolling_beta.plot(ax=ax, title="Rolling Multi Beta to Factors")
 
     plt.show()
 

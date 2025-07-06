@@ -15,16 +15,31 @@ Quantitative finance leverages mathematical models, statistical techniques, and 
 
 ## **Installation**  
 
-Clone the repository and install the package using `pip`:  
+To set up the project, follow these steps:
 
-```bash
-git clone https://github.com/nakulrandad/Quant-Finance.git
-cd Quant-Finance
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/nakulrandad/Quant-Finance.git
+    cd Quant-Finance
+    ```
 
-pip install -e .  # Install in editable mode for development purposes
-# or
-pip install .  # Standard installation
-```
+2.  **Create and activate a virtual environment:**
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+
+3.  **Install the package:**
+
+    *   **Standard Installation:**
+        ```bash
+        pip install .
+        ```
+
+    *   **For Development (Editable Mode):**
+        ```bash
+        pip install -e .
+        ```
 
 ## **Usage**  
 The `analysis` folder contains some sample analysis to showcase some of the functionalities of quant package. This package is actively under development and any feedback and/or contribution would be highly appreciated. 
