@@ -30,5 +30,5 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/nakulrandad/Quant-Finance"
 
-[tool.setuptools]
-packages = ["quant"]
+[tool.setuptools.packages.find]
+where = ["src"]
