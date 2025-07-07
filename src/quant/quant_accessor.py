@@ -371,7 +371,7 @@ class QuantSeriesAccessor:
     def stripna(self):
         """Drop NaN from front and back"""
         x = self._obj
-        return x[x.first_valid_index() : x.last_valid_index()]
+        return x.loc[x.first_valid_index() : x.last_valid_index()]
 
     def return_mean(self, yr=const.YEAR_BY["day"]):
         """Returns annualized returns for a timeseries"""

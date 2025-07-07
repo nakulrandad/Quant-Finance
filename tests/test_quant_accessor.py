@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.quant.quant_accessor import (
+from quant.quant_accessor import (
     QuantDataFrameAccessor,
     QuantSeriesAccessor,
     shared_manager,

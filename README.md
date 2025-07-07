@@ -38,7 +38,7 @@ To set up the project, follow these steps:
 
     *   **For Development (Editable Mode):**
         ```bash
-        pip install -e .
+        pip install -e .[dev]
         ```
 
 ## **Usage**  
