@@ -13,6 +13,12 @@ from . import backtest, constants, utils
 class Portfolio:
     """A class to represent a group of asset returns. The assets can be assigned
     weights and rebalanced to create a portfolio for backtesting.
+
+    The Portfolio class provides functionality for:
+    - Managing asset returns and weights
+    - Calculating portfolio returns with rebalancing
+    - Optimizing portfolio weights using various strategies
+    - Performance analysis and benchmarking
     """
 
     def __init__(
@@ -22,8 +28,16 @@ class Portfolio:
             pd.DataFrame, pd.Series, list, None
         ] = None,  # as of period start
         rebalance_freq: str = "M",
-        benchmark: Union[pd.DataFrame, None] = None,
+        benchmark: Union[pd.DataFrame, str, None] = None,
     ):
+        """Initialize a Portfolio object.
+
+        Args:
+            returns: DataFrame of asset returns or list of ticker symbols
+            weights: Portfolio weights (DataFrame, Series, list, or None for equal weights)
+            rebalance_freq: Frequency of rebalancing ('D', 'W', 'M', 'Q', 'Y', 'custom')
+            benchmark: Optional benchmark returns for performance comparison
+        """
         if isinstance(returns, pd.DataFrame):
             self.returns = returns
         elif isinstance(returns, list):
@@ -52,28 +66,36 @@ class Portfolio:
             f"Period: {self.returns.index[0].strftime('%Y-%m-%d')} to {self.returns.index[-1].strftime('%Y-%m-%d')}",
             f"Rebalance: {self.rebalance_freq}",
         ]
-        
-        # Add assets if there are few enough
+
         if len(self.assets) <= 5:
             info.append(f"Assets: {', '.join(self.assets)}")
         else:
-            info.append(f"Assets: {', '.join(self.assets[:3])}... and {len(self.assets)-3} more")
-            
+            info.append(
+                f"Assets: {', '.join(self.assets[:3])}... and {len(self.assets) - 3} more"
+            )
+
         # Add portfolio statistics if weights are set
         if self.weights is not None:
             latest_weights = self.weights.iloc[-1]
             top_holdings = latest_weights.nlargest(3)
-            holdings_str = ", ".join([f"{asset}: {weight:.1%}" for asset, weight in top_holdings.items()])
+            holdings_str = ", ".join(
+                [f"{asset}: {weight:.1%}" for asset, weight in top_holdings.items()]
+            )
             info.append(f"Top Holdings: {holdings_str}")
-        
+
         return "\n".join(info)
 
     def copy(self):
+        """Create a deep copy of the portfolio."""
         return deepcopy(self)
 
     def _calc_effective_weights(self):
         """Calculate weights that align with returns frequency using self.weights accounting
         for intra rebalancing weight fluctuations due to returns.
+
+        This method handles the drift in portfolio weights between rebalancing dates
+        due to the different performance of assets. It creates a high-frequency
+        weight series that shows how weights evolve between rebalancing points.
         """
         if self.weights is None:
             raise ValueError(
@@ -93,6 +115,8 @@ class Portfolio:
             else:
                 self.eff_weights.iloc[hf_ptr] = updated_weight
 
+            # Update weights for next period based on asset returns
+            # This simulates how weights drift between rebalancing dates
             updated_weight = self.eff_weights.iloc[hf_ptr] * (
                 1 + self.returns.iloc[hf_ptr]
             )
@@ -101,6 +125,7 @@ class Portfolio:
         return None
 
     def _calc_portfolio_returns(self):
+        """Calculate portfolio returns using effective weights and asset returns."""
         self._calc_effective_weights()
         self.portfolio_returns = (
             (self.eff_weights * self.returns).sum(axis=1).to_frame("portfolio")
@@ -108,7 +133,20 @@ class Portfolio:
         return None
 
     def set_benchmark(self, benchmark):
-        self.benchmark = benchmark
+        """Set a benchmark for performance comparison.
+
+        Args:
+            benchmark: DataFrame containing benchmark returns
+
+        Raises:
+            ValueError: If benchmark is not a single asset or a DataFrame
+        """
+        if isinstance(benchmark, str):
+            benchmark = pd.DataFrame.quant.ticker(benchmark).quant.to_returns()
+        elif isinstance(benchmark, pd.DataFrame):
+            assert benchmark.shape[1] == 1, "Benchmark must be a single asset"
+        else:
+            raise ValueError("Benchmark must be a single asset or a DataFrame")
 
     def set_weights(
         self,
@@ -117,6 +155,10 @@ class Portfolio:
     ):
         """Set weights across assets using rebalance frequency. When using custom rebalance frequency,
         weights are assigned with no processing.
+
+        Args:
+            weights: Portfolio weights (DataFrame, Series, list, or None for equal weights)
+            rebalance_freq: Frequency of rebalancing (uses self.rebalance_freq if None)
         """
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
@@ -160,12 +202,22 @@ class Portfolio:
         return None
 
     def _validate_rebalance_freq(self, rebalance_freq):
+        """Validate that the rebalancing frequency is supported.
+
+        Args:
+            rebalance_freq: Frequency string to validate
+        """
         assert rebalance_freq in constants.SAMPLING or rebalance_freq == "custom", (
             f"Invalid rebalance frequency! Choose from {list(constants.SAMPLING.keys()) + ['custom']}"
         )
         return None
 
     def update_rebalance_freq(self, rebalance_freq: str):
+        """Update the rebalancing frequency and recalculate portfolio returns.
+
+        Args:
+            rebalance_freq: New rebalancing frequency
+        """
         assert self.weights is not None, "Weights are not set"
         self._validate_rebalance_freq(rebalance_freq)
         self.rebalance_freq = rebalance_freq
@@ -173,13 +225,34 @@ class Portfolio:
         return None
 
     def perf_summary(self, benchmark=None, yr=constants.YEAR_BY["day"]):
+        """Generate performance summary table for the portfolio.
+
+        Args:
+            benchmark: Optional benchmark for comparison (uses self.benchmark if None)
+            yr: Number of periods in a year for annualization
+
+        Returns:
+            Styled performance summary table
+        """
         if benchmark is None:
             benchmark = self.benchmark
         return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
 
     # TODO: Use scipy.optimize.minimize to optimize weights
     def mvo_weights(self, mu=None, sigma=None, rebalance_freq=None):
-        """Calculate weights for a portfolio that maximizes the Sharpe ratio."""
+        """Calculate weights for a portfolio that maximizes the Sharpe ratio.
+
+        This implements a simple mean-variance optimization approach using
+        the inverse of the covariance matrix.
+
+        Args:
+            mu: Expected returns (uses historical means if None)
+            sigma: Covariance matrix (uses historical covariance if None)
+            rebalance_freq: Frequency for returns aggregation (uses self.rebalance_freq if None)
+
+        Returns:
+            pd.Series: Optimal weights for each asset
+        """
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
 
@@ -200,6 +273,9 @@ class Portfolio:
 
     def kelly_weights(self, rebalance_freq=None, constraints=None):
         """Calculate optimal weights using the Kelly criterion by maximizing log returns.
+
+        The Kelly criterion maximizes the expected logarithm of wealth, which
+        is equivalent to maximizing the geometric mean return.
 
         Args:
             rebalance_freq: Optional frequency for returns aggregation
@@ -259,4 +335,12 @@ class Portfolio:
 
     # TODO: Implement risk parity weights
     def risk_parity_weights(self):
+        """Calculate risk parity weights where each asset contributes equally to portfolio risk.
+
+        This method will implement risk parity optimization where the goal is
+        to equalize the risk contribution of each asset to the total portfolio risk.
+
+        Returns:
+            pd.Series: Risk parity weights for each asset
+        """
         pass

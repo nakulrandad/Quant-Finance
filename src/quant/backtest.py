@@ -121,6 +121,12 @@ def perf_report(
     table = perf_summary_table(ret, bmk=bmk, yr=yr, **kwargs)
     display(table)
 
+    if bmk is not None:
+        table = perf_summary_table(bmk, yr=yr, **kwargs).set_caption(
+            "Benchmark Performance Summary"
+        )
+        display(table)
+
     # Drawdowns
     dd = pd.DataFrame(ret.quant.max_drawdown()).T.rename(
         columns={0: "Start Date", 1: "End Date", 2: "Drawdown"}
@@ -145,6 +151,10 @@ def perf_report(
     ret.rolling(window=window).apply(lambda x: x.quant.return_mean(yr)).iloc[
         window - 1 :
     ].plot(ax=ax, title="Rolling Return")
+    if bmk is not None:
+        bmk.rolling(window=window).apply(lambda x: x.quant.return_mean(yr)).iloc[
+            window - 1 :
+        ].plot(ax=ax, color="black", linestyle="--")
     plot.set_yaxis_percent(ax)
 
     # Plot rolling volatility
@@ -152,13 +162,17 @@ def perf_report(
     ret.rolling(window=window).apply(lambda x: x.quant.return_vol(yr)).iloc[
         window - 1 :
     ].plot(ax=ax, title="Rolling Volatility")
+    if bmk is not None:
+        bmk.rolling(window=window).apply(lambda x: x.quant.return_vol(yr)).iloc[
+            window - 1 :
+        ].plot(ax=ax, color="black", linestyle="--")
     plot.set_yaxis_percent(ax)
 
     # Plot drawdown
     running_max = cumret.cummax()
     drawdown = (cumret - running_max) / running_max
     _, ax = plt.subplots(figsize=(10, 5))
-    
+
     drawdown.plot(ax=ax, title="Drawdown")
     for col in drawdown.columns:
         ax.fill_between(
@@ -167,7 +181,7 @@ def perf_report(
             0,
             alpha=0.3,
         )
-    
+
     ax.hlines(0, drawdown.index[0], drawdown.index[-1], "black", "--")
     plot.set_yaxis_percent(ax)
 
@@ -281,7 +295,7 @@ def risk_report(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
     _, ax = plt.subplots(figsize=(10, 5))
     rolling_beta = rolling_multibeta(ret, factors, window=window)
     rolling_beta.plot(ax=ax, title="Rolling Multi Beta to Factors")
-    
+
     # Rolling risk decomposition
     _, ax = plt.subplots(figsize=(10, 5))
     rolling_decomp = rolling_risk_decomp(ret, factors, window=window)
