@@ -19,7 +19,8 @@ class SharedStateManager:
         self._currency = "INR"
 
     def set_currency(self, value):
-        assert value in ["INR", "USD"], "Currency must be either 'INR' or 'USD'."
+        if value not in ["INR", "USD"]:
+            raise ValueError("Currency must be either 'INR' or 'USD'.")
         self._currency = value
         print(f"Default currency set to {value}")
 
@@ -144,8 +145,10 @@ class QuantDataFrameAccessor:
                 hit_ratio[col] = x[col].dropna().gt(0).mean()
             return hit_ratio
         else:
-            assert isinstance(bmk, pd.DataFrame), "Benchmark must be a DataFrame"
-            assert bmk.shape[1] == 1, "Benchmark must have only one column"
+            if not isinstance(bmk, pd.DataFrame):
+                raise TypeError("Benchmark must be a DataFrame")
+            if bmk.shape[1] != 1:
+                raise ValueError("Benchmark must have only one column")
             for col in x.columns:
                 merged = pd.merge(
                     left=x[[col]],
@@ -159,7 +162,8 @@ class QuantDataFrameAccessor:
 
     def agg_returns(self, freq: str = "M"):
         """Aggregate high frequency returns to low frequency returns"""
-        assert freq in const.SAMPLING.keys(), "Input valid frequency!"
+        if freq not in const.SAMPLING.keys():
+            raise ValueError("Input valid frequency!")
         x = self._obj
         return (
             x.add(1)
@@ -244,8 +248,10 @@ class QuantDataFrameAccessor:
         """Create a factor model for the portfolio"""
         port = self._obj
 
-        assert port.index.equals(factors.index), "Align portfolio and factors"
-        assert port.shape[1] == 1, "Portfolio must have only one column"
+        if not port.index.equals(factors.index):
+            raise ValueError("Align portfolio and factors")
+        if port.shape[1] != 1:
+            raise ValueError("Portfolio must have only one column")
 
         subsets = [
             item

@@ -9,8 +9,9 @@ import pandas as pd
 import requests
 import yfinance as yf
 
-# from mftool import Mftool
 from . import constants as const
+
+# from mftool import Mftool
 
 
 def amfi_api(mfid, scid, fDate, tDate) -> pd.DataFrame:
@@ -135,8 +136,10 @@ def fred_api(id: str) -> pd.DataFrame:
 
 @lru_cache(None)
 def get_rfr(freq: str = "D", curr: str = "INR") -> pd.DataFrame:
-    assert freq in ["D", "W", "M", "Y"], "Input valid frequency!"
-    assert curr in ["INR", "USD"], "Input valid currency!"
+    if freq not in ["D", "W", "M", "Y"]:
+        raise ValueError("Input valid frequency!")
+    if curr not in ["INR", "USD"]:
+        raise ValueError("Input valid currency!")
     raw_data = (
         fred_api(const.RISK_FREE_RATE_FRED[curr]).div(100).reset_index().to_numpy()
     )

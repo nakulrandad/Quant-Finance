@@ -28,8 +28,10 @@ def perf_summary(
     }
 
     if bmk is not None:
-        assert isinstance(bmk, pd.DataFrame), "Benchmark must be a DataFrame"
-        assert bmk.shape[1] == 1, "Benchmark must have only one column"
+        if not isinstance(bmk, pd.DataFrame):
+            raise TypeError("Benchmark must be a DataFrame")
+        if bmk.shape[1] != 1:
+            raise ValueError("Benchmark must have only one column")
         stats["Hit Ratio"] = (
             lambda x, t: x.loc[t].quant.hit_ratio(bmk=bmk.loc[t]).iloc[0]
         )
@@ -231,8 +233,10 @@ def rolling_multibeta(
 
 def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame):
     """Decompose portfolio risk into factor contributions"""
-    assert ret.shape[1] == 1, "Portfolio returns should have only one column."
-    assert ret.index.equals(factors.index), "Index of returns and factors must match."
+    if ret.shape[1] != 1:
+        raise ValueError("Portfolio returns should have only one column.")
+    if not ret.index.equals(factors.index):
+        raise ValueError("Index of returns and factors must match.")
 
     y = ret.values.flatten()
     X = factors.values
@@ -261,8 +265,10 @@ def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame):
 
 
 def rolling_risk_decomp(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
-    assert ret.shape[1] == 1, "Portfolio returns should have only one column."
-    assert ret.index.equals(factors.index), "Index of returns and factors must match."
+    if ret.shape[1] != 1:
+        raise ValueError("Portfolio returns should have only one column.")
+    if not ret.index.equals(factors.index):
+        raise ValueError("Index of returns and factors must match.")
 
     results = pd.DataFrame(
         columns=factors.columns.tolist() + ["Residual"], index=ret.index
