@@ -2,7 +2,6 @@
 
 import datetime as dt
 from functools import lru_cache
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -51,8 +50,8 @@ def amfi_api(mfid, scid, fDate, tDate) -> pd.DataFrame:
 
 
 def amfi(
-    mfid: Union[str, float, int],
-    scid: Union[str, float, int],
+    mfid: str | float | int,
+    scid: str | float | int,
     edate=dt.datetime.now(),
 ):
     """Get historical nav of a mutual fund"""
@@ -75,7 +74,7 @@ def amfi(
     return df
 
 
-# def mftool(scid: Union[str, float, int], edate=dt.datetime.now()):
+# def mftool(scid: str | float | int, edate=dt.datetime.now()):
 #     mf = Mftool()
 #     data = mf.get_scheme_historical_nav(scid)
 #     try:
@@ -106,7 +105,7 @@ def mf_list(filter=None) -> pd.DataFrame:
     return data
 
 
-def mf_api(scid: Union[str, float, int]) -> pd.DataFrame:
+def mf_api(scid: str | float | int) -> pd.DataFrame:
     """Get historical nav of a mutual fund from mfapi"""
     if isinstance(scid, (int, float)):
         scid = str(int(scid))

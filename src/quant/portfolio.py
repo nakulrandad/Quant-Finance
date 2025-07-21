@@ -1,7 +1,6 @@
 """Portfolio class"""
 
 from copy import deepcopy
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -23,18 +22,16 @@ class Portfolio:
 
     def __init__(
         self,
-        returns: Union[pd.DataFrame, list],  # as of period end
-        weights: Union[
-            pd.DataFrame, pd.Series, list, None
-        ] = None,  # as of period start
+        returns: pd.DataFrame | list,  # as of period end
+        weights: pd.DataFrame | pd.Series | list | None = None,  # as of period start
         rebalance_freq: str = "M",
-        benchmark: Union[pd.DataFrame, str, None] = None,
+        benchmark: pd.DataFrame | str | None = None,
     ):
         """Initialize a Portfolio object.
 
         Args:
             returns: DataFrame of asset returns or list of ticker symbols
-            weights: Portfolio weights (DataFrame, Series, list, or None for equal weights)
+            weights: Portfolio weights (DataFrame, Series, list, or None for no weights)
             rebalance_freq: Frequency of rebalancing ('D', 'W', 'M', 'Q', 'Y', 'custom')
             benchmark: Optional benchmark returns for performance comparison
         """
@@ -96,6 +93,8 @@ class Portfolio:
         This method handles the drift in portfolio weights between rebalancing dates
         due to the different performance of assets. It creates a high-frequency
         weight series that shows how weights evolve between rebalancing points.
+
+        Note: Weights must be set before calling this method.
         """
         if self.weights is None:
             raise ValueError(
@@ -153,14 +152,14 @@ class Portfolio:
 
     def set_weights(
         self,
-        weights: Union[pd.DataFrame, pd.Series, list, None],
+        weights: pd.DataFrame | pd.Series | list | None,
         rebalance_freq=None,
     ):
         """Set weights across assets using rebalance frequency. When using custom rebalance frequency,
         weights are assigned with no processing.
 
         Args:
-            weights: Portfolio weights (DataFrame, Series, list, or None for equal weights)
+            weights: Portfolio weights (DataFrame, Series, list, or None to clear weights)
             rebalance_freq: Frequency of rebalancing (uses self.rebalance_freq if None)
         """
         if rebalance_freq is None:
@@ -168,9 +167,11 @@ class Portfolio:
 
         self._validate_rebalance_freq(rebalance_freq)
 
-        if weights is not None:
-            if isinstance(weights, pd.DataFrame):
-                if not self.returns.columns.equals(self.weights.columns):
+        match weights:
+            case None:
+                self.weights = None
+            case pd.DataFrame():
+                if not self.returns.columns.equals(weights.columns):
                     raise ValueError("returns and weights must have same columns")
                 if rebalance_freq == "custom":
                     self.weights = weights
@@ -180,7 +181,7 @@ class Portfolio:
                         .last()
                         .loc[self.returns.index[0] : self.returns.index[-1]]
                     )
-            elif isinstance(weights, (list, pd.Series)):
+            case list() | pd.Series():
                 if len(weights) != len(self.assets):
                     raise ValueError("weights must have same length as assets")
                 self.weights = pd.DataFrame(
@@ -194,8 +195,8 @@ class Portfolio:
                         .last()
                         .loc[: self.returns.index[-1]]
                     )
-        else:
-            self.weights = None
+            case _:
+                raise TypeError("Invalid weights type")
 
         if weights is not None:
             self._calc_portfolio_returns()
