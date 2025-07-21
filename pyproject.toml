@@ -35,6 +35,8 @@ Homepage = "https://github.com/nakulrandad/Quant-Finance"
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pre-commit",
+    "mypy",
 ]
 
 [tool.setuptools.packages.find]
