@@ -28,8 +28,10 @@ def perf_summary(
     }
 
     if bmk is not None:
-        assert isinstance(bmk, pd.DataFrame), "Benchmark must be a DataFrame"
-        assert bmk.shape[1] == 1, "Benchmark must have only one column"
+        if not isinstance(bmk, pd.DataFrame):
+            raise TypeError("Benchmark must be a DataFrame")
+        if bmk.shape[1] != 1:
+            raise ValueError("Benchmark must have only one column")
         stats["Hit Ratio"] = (
             lambda x, t: x.loc[t].quant.hit_ratio(bmk=bmk.loc[t]).iloc[0]
         )
@@ -121,6 +123,12 @@ def perf_report(
     table = perf_summary_table(ret, bmk=bmk, yr=yr, **kwargs)
     display(table)
 
+    if bmk is not None:
+        table = perf_summary_table(bmk, yr=yr, **kwargs).set_caption(
+            "Benchmark Performance Summary"
+        )
+        display(table)
+
     # Drawdowns
     dd = pd.DataFrame(ret.quant.max_drawdown()).T.rename(
         columns={0: "Start Date", 1: "End Date", 2: "Drawdown"}
@@ -145,6 +153,10 @@ def perf_report(
     ret.rolling(window=window).apply(lambda x: x.quant.return_mean(yr)).iloc[
         window - 1 :
     ].plot(ax=ax, title="Rolling Return")
+    if bmk is not None:
+        bmk.rolling(window=window).apply(lambda x: x.quant.return_mean(yr)).iloc[
+            window - 1 :
+        ].plot(ax=ax, color="black", linestyle="--")
     plot.set_yaxis_percent(ax)
 
     # Plot rolling volatility
@@ -152,13 +164,17 @@ def perf_report(
     ret.rolling(window=window).apply(lambda x: x.quant.return_vol(yr)).iloc[
         window - 1 :
     ].plot(ax=ax, title="Rolling Volatility")
+    if bmk is not None:
+        bmk.rolling(window=window).apply(lambda x: x.quant.return_vol(yr)).iloc[
+            window - 1 :
+        ].plot(ax=ax, color="black", linestyle="--")
     plot.set_yaxis_percent(ax)
 
     # Plot drawdown
     running_max = cumret.cummax()
     drawdown = (cumret - running_max) / running_max
     _, ax = plt.subplots(figsize=(10, 5))
-    
+
     drawdown.plot(ax=ax, title="Drawdown")
     for col in drawdown.columns:
         ax.fill_between(
@@ -167,7 +183,7 @@ def perf_report(
             0,
             alpha=0.3,
         )
-    
+
     ax.hlines(0, drawdown.index[0], drawdown.index[-1], "black", "--")
     plot.set_yaxis_percent(ax)
 
@@ -217,8 +233,10 @@ def rolling_multibeta(
 
 def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame):
     """Decompose portfolio risk into factor contributions"""
-    assert ret.shape[1] == 1, "Portfolio returns should have only one column."
-    assert ret.index.equals(factors.index), "Index of returns and factors must match."
+    if ret.shape[1] != 1:
+        raise ValueError("Portfolio returns should have only one column.")
+    if not ret.index.equals(factors.index):
+        raise ValueError("Index of returns and factors must match.")
 
     y = ret.values.flatten()
     X = factors.values
@@ -247,8 +265,10 @@ def risk_decomposition(ret: pd.DataFrame, factors: pd.DataFrame):
 
 
 def rolling_risk_decomp(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
-    assert ret.shape[1] == 1, "Portfolio returns should have only one column."
-    assert ret.index.equals(factors.index), "Index of returns and factors must match."
+    if ret.shape[1] != 1:
+        raise ValueError("Portfolio returns should have only one column.")
+    if not ret.index.equals(factors.index):
+        raise ValueError("Index of returns and factors must match.")
 
     results = pd.DataFrame(
         columns=factors.columns.tolist() + ["Residual"], index=ret.index
@@ -281,7 +301,7 @@ def risk_report(ret: pd.DataFrame, factors: pd.DataFrame, window=252):
     _, ax = plt.subplots(figsize=(10, 5))
     rolling_beta = rolling_multibeta(ret, factors, window=window)
     rolling_beta.plot(ax=ax, title="Rolling Multi Beta to Factors")
-    
+
     # Rolling risk decomposition
     _, ax = plt.subplots(figsize=(10, 5))
     rolling_decomp = rolling_risk_decomp(ret, factors, window=window)
