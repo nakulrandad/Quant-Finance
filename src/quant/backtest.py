@@ -22,7 +22,7 @@ def perf_summary(
         "Excess Return": lambda x, t: x.loc[t].quant.return_mean(yr).iloc[0],
         "Volatility": lambda x, t: x.loc[t].quant.return_vol(yr).iloc[0],
         "Sharpe": lambda x, t: x.loc[t].quant.sharpe(yr).iloc[0],
-        "Max Drawdown": lambda x, t: x.loc[t].quant.max_drawdown()[col][2],
+        "Max Drawdown": lambda x, t: x.loc[t].quant.max_drawdown()[x.columns[0]][2],
         "Hit Ratio": lambda x, t: x.loc[t].quant.hit_ratio().iloc[0],
         **additional_stats,
     }

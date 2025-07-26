@@ -37,6 +37,11 @@ dev = [
     "pytest",
     "pre-commit",
     "mypy",
+    "ipykernel",
+    "jupyter",
+    "pandas-stubs",
+    "types-seaborn",
+    "scipy-stubs",
 ]
 
 [tool.setuptools.packages.find]

@@ -8,8 +8,9 @@ import pandas as pd
 import scipy.stats as stats
 import statsmodels.api as sm
 
-from . import api, utils
+from . import api
 from . import constants as const
+from . import utils
 
 
 class SharedStateManager:

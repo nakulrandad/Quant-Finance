@@ -1,4 +1,3 @@
-import matplotlib as mpl
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,43 +32,51 @@ def set_plot_options(version="bold"):
         )
 
         # Set line properties
-        plt.rcParams.update({
-            "lines.linewidth": 1,
-            "lines.color": "black",
-            "lines.markersize": 4,
-            "lines.markeredgewidth": 1,
-        })
+        plt.rcParams.update(
+            {
+                "lines.linewidth": 1,
+                "lines.color": "black",
+                "lines.markersize": 4,
+                "lines.markeredgewidth": 1,
+            }
+        )
 
         # Configure legend appearance
-        plt.rcParams.update({
-            "legend.edgecolor": "black",
-            "legend.fancybox": False,
-            "legend.framealpha": 1,
-            "legend.loc": "best",
-            "legend.fontsize": 10,
-        })
+        plt.rcParams.update(
+            {
+                "legend.edgecolor": "black",
+                "legend.fancybox": False,
+                "legend.framealpha": 1,
+                "legend.loc": "best",
+                "legend.fontsize": 10,
+            }
+        )
 
         # Enable and style grid
-        plt.rcParams.update({
-            "axes.grid": True,
-            "grid.color": "gray",
-            "grid.alpha": 0.25,
-            "grid.linewidth": 1,
-            "grid.linestyle": "--",
-        })
+        plt.rcParams.update(
+            {
+                "axes.grid": True,
+                "grid.color": "gray",
+                "grid.alpha": 0.25,
+                "grid.linewidth": 1,
+                "grid.linestyle": "--",
+            }
+        )
 
         # Additional time series specific settings
-        plt.rcParams.update({
-            "axes.labelsize": 11,
-            "axes.titlesize": 12,
-            "xtick.labelsize": 10,
-            "ytick.labelsize": 10,
-            "figure.figsize": (10, 6),
-            "figure.dpi": 100,
-            "savefig.dpi": 300,
-            "savefig.bbox": "tight",
-            "savefig.pad_inches": 0.1,
-        })
+        plt.rcParams.update(
+            {
+                "axes.labelsize": 11,
+                "axes.titlesize": 12,
+                "xtick.labelsize": 10,
+                "ytick.labelsize": 10,
+                "figure.figsize": (10, 6),
+                "figure.dpi": 100,
+                "savefig.dpi": 300,
+                "savefig.bbox": "tight",
+                "savefig.pad_inches": 0.1,
+            }
+        )
 
     return None
 
