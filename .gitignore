@@ -163,12 +163,11 @@ cython_debug/
 .vscode/
 
 # ignore some private files
-data/private
-analysis/private
+*/private
 
 # ignore some local files
-analysis/scratchpad.ipynb
-analysis/scratchpad.py
+*/scratchpad.ipynb
+*/scratchpad.py
 
 # Mac files
 .DS_Store
