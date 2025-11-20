@@ -4,9 +4,8 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
 
-from . import backtest, constants, utils
+from . import backtest, constants, optimizers, utils
 
 
 class Portfolio:
@@ -242,22 +241,6 @@ class Portfolio:
             benchmark = self.benchmark
         return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
 
-    def _get_default_optimization_constraints(self, n_assets):
-        """Get default optimization constraints for portfolio weights.
-
-        Args:
-            n_assets: Number of assets in the portfolio
-
-        Returns:
-            tuple: (bounds, constraints) for scipy.minimize
-                  Use None for unconstrained/unbounded optimization
-        """
-        bounds = [(0, 1) for _ in range(n_assets)]  # weights between 0 and 1
-        constraints = [
-            {"type": "eq", "fun": lambda x: np.sum(x) - 1}  # weights sum to 1
-        ]
-        return bounds, constraints
-
     def mvo_weights(
         self,
         mu=None,
@@ -268,83 +251,25 @@ class Portfolio:
     ):
         """Calculate weights for a portfolio that maximizes the Sharpe ratio using mean-variance optimization.
 
-        This implements mean-variance optimization to maximize the Sharpe ratio
-        using scipy's optimization capabilities.
-
-        Args:
-            mu: Expected returns (uses historical means if None)
-            sigma: Covariance matrix (uses historical covariance if None)
-            rebalance_freq: Frequency for returns aggregation (uses self.rebalance_freq if None)
-            bounds: List of (min, max) tuples for each asset weight, "default" for default bounds,
-                or None for unbounded
-            constraints: List of constraint dictionaries for scipy.minimize, "default" for default
-                constraints, or None for unconstrained
-
-        Returns:
-            pd.Series: Optimal weights for each asset
+        Wrapper around MeanVarianceOptimizer.
         """
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
 
-        if mu is None:
-            if rebalance_freq == "custom":
-                mu = self.returns.mean()
-            else:
-                mu = self.returns.quant.agg_returns(rebalance_freq).mean()
+        # Aggregate returns if needed
+        if rebalance_freq == "custom":
+            agg_returns = self.returns
+        else:
+            agg_returns = self.returns.quant.agg_returns(rebalance_freq)
 
-        if sigma is None:
-            if rebalance_freq == "custom":
-                sigma = self.returns.cov()
-            else:
-                sigma = self.returns.quant.agg_returns(rebalance_freq).cov()
-
-        n_assets = len(self.assets)
-
-        def neg_sharpe_ratio(weights):
-            """Negative of the Sharpe ratio for minimization.
-
-            This function calculates the negative of the Sharpe ratio
-            of the portfolio, which we minimize to find optimal weights.
-            """
-            portfolio_return = np.sum(weights * mu)
-            portfolio_vol = np.sqrt(weights.T @ sigma @ weights)
-
-            # Avoid division by zero
-            if portfolio_vol == 0:
-                return 1e6
-
-            sharpe_ratio = portfolio_return / portfolio_vol
-            return -sharpe_ratio
-
-        # Apply defaults if requested
-        if bounds == "default" or constraints == "default":
-            default_bounds, default_constraints = (
-                self._get_default_optimization_constraints(n_assets)
-            )
-            bounds = default_bounds if bounds == "default" else bounds
-            constraints = (
-                default_constraints if constraints == "default" else constraints
-            )
-
-        # Initial guess: equal weights
-        initial_weights = np.array([1 / n_assets] * n_assets)
-
-        # Optimize using scipy's SLSQP method
-        result = minimize(
-            neg_sharpe_ratio,
-            initial_weights,
-            method="SLSQP",
+        optimizer = optimizers.MeanVarianceOptimizer()
+        return optimizer.optimize(
+            agg_returns,
+            mu=mu,
+            sigma=sigma,
             bounds=bounds,
             constraints=constraints,
-            options={"ftol": 1e-8, "disp": False},
         )
-
-        if not result.success:
-            raise ValueError(f"Optimization failed: {result.message}")
-
-        weights = pd.Series(result.x, index=self.assets)
-
-        return weights
 
     def kelly_weights(
         self,
@@ -352,143 +277,42 @@ class Portfolio:
         bounds="default",
         constraints="default",
     ):
-        """Calculate optimal weights using the Kelly criterion by maximizing log returns.
+        """Calculate optimal weights using the Kelly criterion.
 
-        The Kelly criterion maximizes the expected logarithm of wealth, which
-        is equivalent to maximizing the geometric mean return.
-
-        Args:
-            rebalance_freq: Optional frequency for returns aggregation
-            bounds: List of (min, max) tuples for each asset weight, "default" for default bounds,
-                or None for unbounded
-            constraints: List of constraint dictionaries for scipy.minimize, "default" for default
-                constraints, or None for unconstrained
-
-        Returns:
-            pd.Series: Optimal weights for each asset
+        Wrapper around KellyOptimizer.
         """
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
 
+        # Aggregate returns if needed
         if rebalance_freq == "custom":
-            returns = self.returns
+            agg_returns = self.returns
         else:
-            returns = self.returns.quant.agg_returns(rebalance_freq)
+            agg_returns = self.returns.quant.agg_returns(rebalance_freq)
 
-        n_assets = len(self.assets)
-
-        def neg_log_return(weights):
-            """Negative of the expected log return for minimization."""
-            portfolio_returns = returns.dot(weights)
-            return -np.mean(np.log(1 + portfolio_returns))
-
-        # Apply defaults if requested
-        if bounds == "default" or constraints == "default":
-            default_bounds, default_constraints = (
-                self._get_default_optimization_constraints(n_assets)
-            )
-            bounds = default_bounds if bounds == "default" else bounds
-            constraints = (
-                default_constraints if constraints == "default" else constraints
-            )
-
-        # Initial guess: equal weights
-        initial_weights = np.array([1 / n_assets] * n_assets)
-
-        # Optimize using scipy's SLSQP method
-        result = minimize(
-            neg_log_return,
-            initial_weights,
-            method="SLSQP",
+        optimizer = optimizers.KellyOptimizer()
+        return optimizer.optimize(
+            agg_returns,
             bounds=bounds,
             constraints=constraints,
-            options={"ftol": 1e-8, "disp": False},
         )
-
-        if not result.success:
-            raise ValueError(f"Optimization failed: {result.message}")
-
-        weights = pd.Series(result.x, index=self.assets)
-
-        return weights
 
     def risk_budget_weights(self, rebalance_freq=None, risk_budget=None):
-        """Calculate risk budget weights where each asset's risk contribution matches a target risk budget.
+        """Calculate risk budget weights.
 
-        Risk budget optimization aims to achieve a specific risk contribution from each asset
-        according to the provided risk budget. By default, equal risk contribution is targeted.
-
-        Args:
-            rebalance_freq: Optional frequency for returns aggregation
-            risk_budget: Array of target risk contributions for each asset (must sum to 1).
-                        If None, equal risk contribution is used (1/n_assets for each asset)
-
-        Returns:
-            pd.Series: Risk budget weights for each asset
+        Wrapper around RiskBudgetOptimizer.
         """
         if rebalance_freq is None:
             rebalance_freq = self.rebalance_freq
 
-        # Get returns at the specified frequency
+        # Aggregate returns if needed
         if rebalance_freq == "custom":
-            returns = self.returns
+            agg_returns = self.returns
         else:
-            returns = self.returns.quant.agg_returns(rebalance_freq)
+            agg_returns = self.returns.quant.agg_returns(rebalance_freq)
 
-        n_assets = len(self.assets)
-
-        # Set default risk budget to equal risk contribution
-        if risk_budget is None:
-            risk_budget = np.array([1 / n_assets] * n_assets)
-        else:
-            risk_budget = np.array(risk_budget)
-            # Validate that risk budget sums to 1
-            if not np.isclose(np.sum(risk_budget), 1.0, atol=1e-6):
-                raise ValueError("Risk budget must sum to 1")
-            if len(risk_budget) != n_assets:
-                raise ValueError(
-                    f"Risk budget length ({len(risk_budget)}) must match number of assets ({n_assets})"
-                )
-
-        # Calculate covariance matrix
-        sigma = returns.cov()
-
-        def risk_budget_objective(weights):
-            """Objective function to minimize the difference between actual and target risk contributions.
-
-            This function calculates the sum of squared differences between actual risk contributions
-            and the target risk budget. When minimized, actual risk contributions will match the target.
-            """
-            weights = weights / np.sum(weights)
-
-            portfolio_var = weights.T @ sigma @ weights
-
-            risk_contributions = (sigma @ weights) * weights / portfolio_var
-
-            # Calculate sum of squared differences from target risk budget
-            error = np.sum((risk_contributions - risk_budget) ** 2)
-
-            return error
-
-        # Set up constraints and bounds
-        constraints = [{"type": "eq", "fun": lambda x: np.sum(x) - 1}]
-        bounds = [(0, 1) for _ in range(n_assets)]  # weights between 0 and 1
-
-        initial_weights = np.array([1 / n_assets] * n_assets)
-
-        # Optimize using scipy's SLSQP method
-        result = minimize(
-            risk_budget_objective,
-            initial_weights,
-            method="SLSQP",
-            bounds=bounds,
-            constraints=constraints,
-            options={"ftol": 1e-8, "disp": False},
+        optimizer = optimizers.RiskBudgetOptimizer()
+        return optimizer.optimize(
+            agg_returns,
+            risk_budget=risk_budget,
         )
-
-        if not result.success:
-            raise ValueError(f"Risk budget optimization failed: {result.message}")
-
-        weights = pd.Series(result.x, index=self.assets)
-
-        return weights
