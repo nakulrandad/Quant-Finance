@@ -5,7 +5,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-from . import backtest, constants, optimizers, utils
+from . import analytics, constants, optimizers, utils
 
 
 class Portfolio:
@@ -239,7 +239,9 @@ class Portfolio:
         """
         if benchmark is None:
             benchmark = self.benchmark
-        return backtest.perf_summary_table(self.portfolio_returns, bmk=benchmark, yr=yr)
+        return analytics.perf_summary_table(
+            self.portfolio_returns, bmk=benchmark, yr=yr
+        )
 
     def mvo_weights(
         self,
